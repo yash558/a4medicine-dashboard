@@ -10,11 +10,10 @@ const Charts = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [topic, setTopic] = useState("");
-  const [price, setPrice] = useState("");
   const [editFormVisible, setEditFormVisible] = useState(false);
   const token = localStorage.getItem("token");
   const [showForm, setShowForm] = useState(false);
-  const [image, setImage] = useState(undefined);
+  const [image, setImage] = useState("");
   const [id, setId] = useState(null);
   const [file, setFile] = useState(null);
   const [fileExt, setFileExtension] = useState("");
@@ -93,7 +92,7 @@ const Charts = () => {
     try {
       await handleUpload();
       const apiUrl = `${API}chart`;
-     
+
       const response = await fetch(apiUrl, {
         method: "POST",
         headers: {
@@ -139,23 +138,47 @@ const Charts = () => {
 
   // console.log(url)
 
+  function removeUndefinedFields(obj) {
+    if (typeof obj !== "object" || obj === null) {
+      throw new Error("Input must be a non-null object.");
+    }
+
+    const result = {};
+    for (const [key, value] of Object.entries(obj)) {
+      if (value !== undefined) {
+        result[key] = value;
+      }
+    }
+
+    return result;
+  }
+
   // function to edit a chart
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     try {
-
       // If the file is selected for upload, upload the image and get the URL
       if (file) {
-        await handleUpload();      
+        await handleUpload();
       }
       const apiUrl = `${API}chart/${id}`;
+      const newBody = {};
+
+      if (editTopic !== "") {
+        newBody.topic = editTopic;
+      }
+      if (image !== "") {
+        newBody.image = image;
+      }
+      console.log(newBody);
       const response = await fetch(apiUrl, {
         method: "PATCH",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ topic: editTopic, image: image }),
+
+        body: JSON.stringify(newBody),
       });
 
       const data = await response.json();
@@ -165,7 +188,7 @@ const Charts = () => {
         // Update the data state with the edited values
         setData((prevData) =>
           prevData.map((item) =>
-            item.id === id ? { ...item, topic: editTopic, image: image } : item
+            item.id === id ? { ...item, newBody } : item
           )
         );
         // Hide the edit form

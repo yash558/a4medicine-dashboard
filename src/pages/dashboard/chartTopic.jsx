@@ -104,7 +104,10 @@ const ChartTopic = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await handleUpload();
+      if (file) {
+        await handleUpload();
+      }
+
       const apiUrl = `${API}section/${urlId}`;
 
       const response = await fetch(apiUrl, {
@@ -293,7 +296,7 @@ const ChartTopic = () => {
                 id="name"
                 className="w-full border border-gray-300 px-3 py-2 mb-4 rounded"
                 value={topic}
-                disabled
+                onChange={(e) => setTopic(e.target.value)}
                 required
               />
               <label htmlFor="name" className="block mb-2 font-bold">
@@ -388,7 +391,7 @@ const ChartTopic = () => {
       {editFormVisible && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-75">
           <div className="bg-white p-8 rounded-lg shadow-lg">
-            <h2 className="text-lg font-semibold mb-4">Edit Book</h2>
+            <h2 className="text-lg font-semibold mb-4">Edit Chart Topic</h2>
             <form onSubmit={handleEditSubmit}>
               <div className="mb-4">
                 <label
@@ -402,7 +405,7 @@ const ChartTopic = () => {
                   id="name"
                   name="name"
                   value={topic}
-                  disabled
+                  onChange={(e) => setEditTopic(e.target.value)}
                   className="w-full border rounded-md px-3 py-2 mt-1 focus:outline-none focus:ring focus:border-blue-300"
                 />
               </div>
