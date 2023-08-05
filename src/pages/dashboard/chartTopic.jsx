@@ -4,13 +4,11 @@ import toast, { Toaster } from "react-hot-toast";
 
 import API from "./../../API";
 import Loading from "./../../components/Loading";
-import { Sidenav } from "../../layout";
 
 const ChartTopic = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [topic, setTopic] = useState("");
-  const [price, setPrice] = useState("");
   const [editFormVisible, setEditFormVisible] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [image, setImage] = useState("");
@@ -18,11 +16,13 @@ const ChartTopic = () => {
   const [file, setFile] = useState(null);
   const [fileExt, setFileExtension] = useState("");
   const [showNotification, setShowNotification] = useState(false);
-  const [urldata, setUrlData] = useState("");
   const urlId = window.location.href.split("chart/")[1];
   const token = localStorage.getItem("token");
   const [section, setSection] = useState("");
   const [body, setBody] = useState("");
+  const [editTopic, setEditTopic] = useState("");
+  const [editBody, setEditBody] = useState("");
+  const [editSection, setEditSection] = useState("");
 
   // function to get all data from api
   useEffect(() => {
@@ -44,6 +44,7 @@ const ChartTopic = () => {
         if (dat.status === "success") {
           setLoading(false);
           setData(sortedData);
+          setTopic(dat.data.topic);
           // console.log(dat?.data.charts);
         } else {
           toast.error(dat.message);
@@ -129,30 +130,18 @@ const ChartTopic = () => {
       // Hide the form popup after submitting
       setShowForm(false);
       // Clear the form fields after submission
+
+      setSection("");
+      setBody("");
+      setImage("");
+      setFile(null);
+      setFileExtension("");
     } catch (error) {
       console.error("Error:", error);
       toast.error("An unexpected error occurred. Please try again.");
     }
   };
 
-  // function to edit a quiz
-  const handleEditSubmit = () => {};
-
-  // function to get a file name
-  const handleFileChange = (e) => {
-    const selectedFile = e.target.files[0];
-    setFile(selectedFile);
-
-    // Get the file name (including the extension)
-    const fileName = selectedFile.name;
-
-    // Split the file name to extract the file extension
-    const parts = fileName.split(".");
-    const fileExtension = parts[parts.length - 1]; // Get the last part which is the file extension
-    setFileExtension(fileExtension);
-  };
-
-  // console.log(url)
   // get a image url from api
   const handleUpload = async () => {
     if (!file) {
@@ -211,14 +200,76 @@ const ChartTopic = () => {
     }
   };
 
+  // function to edit a chart topic
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await handleUpload();
+      const apiUrl = `${API}section/${id}`;
+      const response = await fetch(apiUrl, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          topic: editTopic,
+          body: editBody,
+          section: editSection,
+          image: image,
+        }),
+      });
 
-  // console.log(image);
+      const data = await response.json();
+
+      if (response.ok && data.status === "success") {
+        toast.success("Chart Topic data updated successfully!");
+        // Update the data state with the edited values
+        setData((prevData) =>
+          prevData.map((item) =>
+            item.id === id
+              ? {
+                  ...item,
+                  topic: editTopic,
+                  body: editBody,
+                  section: editSection,
+                  image: image,
+                }
+              : item
+          )
+        );
+        // Hide the edit form
+        hideEditForm();
+      } else {
+        toast.error(
+          data.message || "Error occurred while updating the chart data."
+        );
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error("An unexpected error occurred. Please try again.");
+    }
+  };
+
+  // function to get a file name
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    setFile(selectedFile);
+
+    // Get the file name (including the extension)
+    const fileName = selectedFile.name;
+
+    // Split the file name to extract the file extension
+    const parts = fileName.split(".");
+    const fileExtension = parts[parts.length - 1]; // Get the last part which is the file extension
+    setFileExtension(fileExtension);
+  };
 
   return (
     <div className="p-10">
       <Toaster />
       <div className="flex justify-between">
-        <h1 className="text-4xl text-bold">Charts</h1>
+        <h1 className="text-4xl text-bold">{topic}</h1>
         <button
           className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
           onClick={() => setShowForm(true)}
@@ -242,7 +293,7 @@ const ChartTopic = () => {
                 id="name"
                 className="w-full border border-gray-300 px-3 py-2 mb-4 rounded"
                 value={topic}
-                onChange={(e) => setTopic(e.target.value)}
+                disabled
                 required
               />
               <label htmlFor="name" className="block mb-2 font-bold">
@@ -312,7 +363,10 @@ const ChartTopic = () => {
               </div>
               <div className="ml-auto space-x-2">
                 <button
-                  onClick={() => {}}
+                  onClick={() => {
+                    setEditFormVisible(true);
+                    setId(item.id);
+                  }}
                   className="px-3 py-1 text-white bg-blue-500 rounded hover:bg-blue-600"
                 >
                   Edit
@@ -341,40 +395,68 @@ const ChartTopic = () => {
                   htmlFor="name"
                   className="block font-medium text-gray-700"
                 >
-                  Name:
+                  Topic:
                 </label>
                 <input
                   type="text"
                   id="name"
                   name="name"
                   value={topic}
-                  onChange={(e) => setTopic(e.target.value)}
+                  disabled
                   className="w-full border rounded-md px-3 py-2 mt-1 focus:outline-none focus:ring focus:border-blue-300"
                 />
               </div>
               <div className="mb-4">
                 <label
-                  htmlFor="price"
+                  htmlFor="section"
                   className="block font-medium text-gray-700"
                 >
-                  Price:
+                  Section:
                 </label>
                 <input
-                  type="number"
-                  id="price"
-                  name="price"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
+                  type="text"
+                  id="section"
+                  name="section"
+                  value={editSection}
+                  onChange={(e) => setEditSection(e.target.value)}
                   className="w-full border rounded-md px-3 py-2 mt-1 focus:outline-none focus:ring focus:border-blue-300"
                 />
               </div>
-              <div className="flex justify-end">
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              <div className="mb-4">
+                <label
+                  htmlFor="body"
+                  className="block font-medium text-gray-700"
                 >
-                  Save
-                </button>
+                  Body:
+                </label>
+                <input
+                  type="text"
+                  id="body"
+                  name="body"
+                  value={editBody}
+                  onChange={(e) => setEditBody(e.target.value)}
+                  className="w-full border rounded-md px-3 py-2 mt-1 focus:outline-none focus:ring focus:border-blue-300"
+                />
+              </div>
+              <div className="mb-4">
+                <label htmlFor="imageLink" className="block mb-2 font-bold">
+                  Image:
+                </label>
+                <input
+                  type="file" // Use type="file" for image input
+                  id="image"
+                  className="w-full border border-gray-300 px-3 py-2 mb-4 rounded"
+                  onChange={handleFileChange} // Store the image data in the state
+                  accept="image/*" // Add accept attribute to allow only image files
+                  required
+                />
+              </div>
+              <div className="flex justify-end">
+                <input
+                  type="submit"
+                  className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                  value="Submit"
+                />
                 <button
                   type="button"
                   onClick={hideEditForm}

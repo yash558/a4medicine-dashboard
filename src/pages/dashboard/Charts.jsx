@@ -14,12 +14,12 @@ const Charts = () => {
   const [editFormVisible, setEditFormVisible] = useState(false);
   const token = localStorage.getItem("token");
   const [showForm, setShowForm] = useState(false);
-  const [image, setImage] = useState("");
+  const [image, setImage] = useState(undefined);
   const [id, setId] = useState(null);
   const [file, setFile] = useState(null);
   const [fileExt, setFileExtension] = useState("");
   const [showNotification, setShowNotification] = useState(false);
-  const [urldata, setUrlData] = useState("");
+  const [editTopic, setEditTopic] = useState("");
 
   // function to get all data from api
   useEffect(() => {
@@ -93,7 +93,7 @@ const Charts = () => {
     try {
       await handleUpload();
       const apiUrl = `${API}chart`;
-      console.log("2");
+     
       const response = await fetch(apiUrl, {
         method: "POST",
         headers: {
@@ -123,9 +123,6 @@ const Charts = () => {
     }
   };
 
-  // function to edit a quiz
-  const handleEditSubmit = () => {};
-
   // function to get a file name
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
@@ -141,8 +138,50 @@ const Charts = () => {
   };
 
   // console.log(url)
-  // get a image url from api
 
+  // function to edit a chart
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    try {
+
+      // If the file is selected for upload, upload the image and get the URL
+      if (file) {
+        await handleUpload();      
+      }
+      const apiUrl = `${API}chart/${id}`;
+      const response = await fetch(apiUrl, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ topic: editTopic, image: image }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.status === "success") {
+        toast.success("Chart data updated successfully!");
+        // Update the data state with the edited values
+        setData((prevData) =>
+          prevData.map((item) =>
+            item.id === id ? { ...item, topic: editTopic, image: image } : item
+          )
+        );
+        // Hide the edit form
+        hideEditForm();
+      } else {
+        toast.error(
+          data.message || "Error occurred while updating the chart data."
+        );
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error("An unexpected error occurred. Please try again.");
+    }
+  };
+
+  // get a image url from api
   const handleUpload = async () => {
     if (!file) {
       toast.error("Please select a file to upload.");
@@ -213,7 +252,10 @@ const Charts = () => {
         </button>
         {showForm && (
           <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-25">
-            <form className="bg-white p-8 rounded shadow-md w-96" onSubmit={handleSubmit}>
+            <form
+              className="bg-white p-8 rounded shadow-md w-96"
+              onSubmit={handleSubmit}
+            >
               <div className="flex items-end justify-end">
                 <button onClick={() => setShowForm(false)}>X</button>
               </div>
@@ -273,7 +315,10 @@ const Charts = () => {
               </div>
               <div className="ml-auto space-x-2">
                 <button
-                  onClick={() => {}}
+                  onClick={() => {
+                    setEditFormVisible(true);
+                    setId(item.id);
+                  }}
                   className="px-3 py-1 text-white bg-blue-500 rounded hover:bg-blue-600"
                 >
                   Edit
@@ -312,36 +357,31 @@ const Charts = () => {
                 </label>
                 <input
                   type="text"
-                  id="name"
-                  name="name"
-                  value={topic}
-                  onChange={(e) => setTopic(e.target.value)}
+                  id="topic"
+                  name="topic"
+                  value={editTopic}
+                  onChange={(e) => setEditTopic(e.target.value)}
                   className="w-full border rounded-md px-3 py-2 mt-1 focus:outline-none focus:ring focus:border-blue-300"
                 />
               </div>
               <div className="mb-4">
-                <label
-                  htmlFor="price"
-                  className="block font-medium text-gray-700"
-                >
-                  Price:
+                <label htmlFor="imageLink" className="block mb-2 font-bold">
+                  Image:
                 </label>
                 <input
-                  type="number"
-                  id="price"
-                  name="price"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                  className="w-full border rounded-md px-3 py-2 mt-1 focus:outline-none focus:ring focus:border-blue-300"
+                  type="file" // Use type="file" for image input
+                  id="image"
+                  className="w-full border border-gray-300 px-3 py-2 mb-4 rounded"
+                  onChange={handleFileChange} // Store the image data in the state
+                  accept="image/*" // Add accept attribute to allow only image files
                 />
               </div>
               <div className="flex justify-end">
-                <button
+                <input
                   type="submit"
-                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                >
-                  Save
-                </button>
+                  className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                  value="Submit"
+                />
                 <button
                   type="button"
                   onClick={hideEditForm}
