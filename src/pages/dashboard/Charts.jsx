@@ -91,6 +91,8 @@ const Charts = () => {
     e.preventDefault();
     try {
       await handleUpload();
+      console.log("moving to update in DB...");
+      console.log(image);
       const apiUrl = `${API}chart`;
 
       const response = await fetch(apiUrl, {
@@ -157,19 +159,24 @@ const Charts = () => {
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     try {
+      let key;
       // If the file is selected for upload, upload the image and get the URL
       if (file) {
-        await handleUpload();
+        key = await handleUpload();
+        console.log("moving to update in DB...");
       }
       const apiUrl = `${API}chart/${id}`;
       const newBody = {};
 
+      console.log("image", key);
+
       if (editTopic !== "") {
         newBody.topic = editTopic;
       }
-      if (image !== "") {
-        newBody.image = image;
+      if (key !== "") {
+        newBody.image = key;
       }
+
       console.log(newBody);
       const response = await fetch(apiUrl, {
         method: "PATCH",
@@ -187,9 +194,7 @@ const Charts = () => {
         toast.success("Chart data updated successfully!");
         // Update the data state with the edited values
         setData((prevData) =>
-          prevData.map((item) =>
-            item.id === id ? { ...item, newBody } : item
-          )
+          prevData.map((item) => (item.id === id ? { ...item, newBody } : item))
         );
         // Hide the edit form
         hideEditForm();
@@ -205,6 +210,84 @@ const Charts = () => {
   };
 
   // get a image url from api
+  // const handleUpload = async () => {
+  //   if (!file) {
+  //     toast.error("Please select a file to upload.");
+  //     return;
+  //   }
+
+  //   try {
+  //     const urlResponse = await fetch(`${API}image`, {
+  //       method: "POST",
+  //       headers: {
+  //         Authorization: `Bearer ${token}`,
+  //         "Content-Type": "application/json",
+  //       },
+
+  //       body: JSON.stringify({
+  //         folderName: "charts-cover",
+  //         format: fileExt,
+  //       }),
+  //     });
+
+  //     const urlData = await urlResponse.json();
+
+  //     if (urlData.status === "success") {
+  //       toast.success("Image uploaded successfully!");
+  //     } else {
+  //       toast.error(urlData.message);
+  //     }
+
+  //     const url = urlData.data.signedUrl;
+  //     const key = urlData.data.key;
+  //     setImage(key);
+
+  //     const xhr = new XMLHttpRequest();
+  //     xhr.open("PUT", url, true);
+  //     xhr.setRequestHeader("Content-Type", file.type);
+
+  //     xhr.onreadystatechange = function () {
+  //       if (xhr.readyState === 4 && xhr.status === 200) {
+  //         toast.success("File uploaded successfully!");
+  //         // Handle the successful upload
+  //       }
+  //     };
+
+  //     xhr.onerror = function () {
+  //       console.error("Error uploading file");
+  //       toast.error("Error uploading file.");
+  //       // Handle the error
+  //     };
+
+  //     xhr.send(file);
+  //     // console.log(file);
+  //   } catch (error) {
+  //     console.error("Error fetching upload URL:", error);
+  //     toast.error("An error occurred while fetching the upload URL.");
+  //   }
+  // };
+
+  const uploadFile = async (url, file) => {
+    console.log("File uploading...");
+    try {
+      const response = await fetch(url, {
+        method: "PUT",
+        headers: {
+          "Content-Type": file.type,
+        },
+        body: file,
+      });
+
+      if (response.status === 200) {
+        return "File uploaded successfully!";
+      } else {
+        throw new Error("Error uploading file");
+      }
+    } catch (error) {
+      throw new Error("Error uploading file");
+    }
+  };
+
   const handleUpload = async () => {
     if (!file) {
       toast.error("Please select a file to upload.");
@@ -218,7 +301,6 @@ const Charts = () => {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-
         body: JSON.stringify({
           folderName: "charts-cover",
           format: fileExt,
@@ -231,31 +313,21 @@ const Charts = () => {
         toast.success("Image uploaded successfully!");
       } else {
         toast.error(urlData.message);
+        return;
       }
 
       const url = urlData.data.signedUrl;
       const key = urlData.data.key;
+      console.log("key in handle upload", key);
       setImage(key);
 
-      const xhr = new XMLHttpRequest();
-      xhr.open("PUT", url, true);
-      xhr.setRequestHeader("Content-Type", file.type);
-
-      xhr.onreadystatechange = function () {
-        if (xhr.readyState === 4 && xhr.status === 200) {
-          toast.success("File uploaded successfully!");
-          // Handle the successful upload
-        }
-      };
-
-      xhr.onerror = function () {
-        console.error("Error uploading file");
-        toast.error("Error uploading file.");
-        // Handle the error
-      };
-
-      xhr.send(file);
-      // console.log(file);
+      console.log("Uploading file started...");
+      const uploadResponse = await uploadFile(url, file);
+      console.log("File uploaded successfully!");
+      toast.success(uploadResponse);
+      console.log("finished hande upload fn");
+      return key;
+      // Handle the successful upload
     } catch (error) {
       console.error("Error fetching upload URL:", error);
       toast.error("An error occurred while fetching the upload URL.");
