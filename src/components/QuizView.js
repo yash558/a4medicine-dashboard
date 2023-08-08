@@ -1,41 +1,48 @@
 import React, { useState, useEffect } from "react";
-import API from "../API";
 import toast, { Toaster } from "react-hot-toast";
-import Loading from "./Loading";
 
-const QuizView = () => {
+import API from "../API";
+
+const Charts = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [name, setName] = useState("");
-  const [price, setPrice] = useState("");
-  const [editingBook, setEditingBook] = useState(null);
+  const [topic, setTopic] = useState("");
   const [editFormVisible, setEditFormVisible] = useState(false);
   const token = localStorage.getItem("token");
   const [showForm, setShowForm] = useState(false);
   const [image, setImage] = useState("");
-  const [embed, setEmbed] = useState("");
   const [id, setId] = useState(null);
-  const [count, setCount] = useState(0);
   const [file, setFile] = useState(null);
   const [fileExt, setFileExtension] = useState("");
   const [showNotification, setShowNotification] = useState(false);
-  const [editingQuiz, setEditingQuiz] = useState(null);
-  const [editName, setEditName] = useState("");
-  const [editImage, setEditImage] = useState("");
-  const [editEmbed, setEditEmbed] = useState("");
-  const [editCount, setEditCount] = useState(0);
+  const urlId = window.location.href.split("chart/")[1];
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [section, setSection] = useState("");
+  const [editTopic, setEditTopic] = useState("");
+  const [editBody, setEditBody] = useState("");
+  const [editSection, setEditSection] = useState("");
 
   // function to get all data from api
   useEffect(() => {
     const getData = async () => {
       setLoading(true);
       try {
-        const response = await fetch(`${API}quiz`);
+        const response = await fetch(`${API}quiz`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
         const dat = await response.json();
-        //   console.log(dat.data.books);
+        const sortedData = [...dat?.data.section].sort((a, b) =>
+          a.topic.localeCompare(b.topic)
+        );
+
         if (dat.status === "success") {
           setLoading(false);
-          setData(dat?.data.quizes);
+          setData(sortedData);
+          setTitle(dat?.data?.topic);
         } else {
           toast.error(dat.message);
           setLoading(false);
@@ -67,7 +74,7 @@ const QuizView = () => {
   // function to delete a data
   const handleDelete = async () => {
     try {
-      const response = await fetch(`${API}quiz/${id}`, {
+      const response = await fetch(`${API}section/${id}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -91,53 +98,48 @@ const QuizView = () => {
     setEditFormVisible(false);
   };
 
-  // function to create a new quiz
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    handleUpload();
+    try {
+      let key;
+      key = await handleUpload();
+      console.log("moving to update in DB...");
+      console.log(image);
+      const apiUrl = `${API}/section/${urlId}`;
 
-    const apiEndpoint = `${API}quiz`;
-
-    fetch(apiEndpoint, {
-      method: "POST",
-
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ name, image, embed, count }),
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        // Handle the response data if needed
-        console.log("Response:", data);
-        if (data.status === "success") {
-          toast.success("New Quiz Created!");
-        }
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-        toast.error(error);
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          topic: title,
+          image: key,
+          body: body,
+          section: section,
+        }),
       });
 
-    // Hide the form popup after submitting
-    setShowForm(false);
-    // Clear the form fields after submission
-    setName("");
-    setImage("");
-  };
+      const data = await response.json();
+      // console.log("Response:", data);
 
-  const handleEdit = (quiz) => {
-    setEditingQuiz(quiz);
-    setEditName(quiz.name);
-    setEditImage(quiz.image);
-    setEditEmbed(quiz.embed);
-    setEditCount(quiz.count);
-  };
-  
+      if (response.ok && data.status === "success") {
+        toast.success("New Chart Topic Created!");
+      } else {
+        toast.error(
+          data.message || "Error occurred while creating the chart topic."
+        );
+      }
 
-  // function to edit a quiz
-  const handleEditSubmit = () => {};
+      // Hide the form popup after submitting
+      setShowForm(false);
+      // Clear the form fields after submission
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error("An unexpected error occurred. Please try again.");
+    }
+  };
 
   // function to get a file name
   const handleFileChange = (e) => {
@@ -153,7 +155,89 @@ const QuizView = () => {
     setFileExtension(fileExtension);
   };
 
-  // get a image url from api
+  // console.log(url)
+
+  // function to edit a chart
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      let key;
+      // If the file is selected for upload, upload the image and get the URL
+      if (file) {
+        key = await handleUpload();
+        console.log("moving to update in DB...");
+      }
+      const apiUrl = `${API}section/${id}`;
+      const newBody = {};
+
+      console.log("image", key);
+
+      if (editTopic !== "") {
+        newBody.topic = title;
+      }
+      if (key !== "") {
+        newBody.image = key;
+      }
+      if (editSection !== "") {
+        newBody.section = editSection;
+      }
+      if (editBody !== "") {
+        newBody.body = editBody;
+      }
+
+      console.log(newBody);
+      const response = await fetch(apiUrl, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+
+        body: JSON.stringify(newBody),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.status === "success") {
+        toast.success("Chart data updated successfully!");
+        // Update the data state with the edited values
+        setData((prevData) =>
+          prevData.map((item) => (item.id === id ? { ...item, newBody } : item))
+        );
+        // Hide the edit form
+        hideEditForm();
+      } else {
+        toast.error(
+          data.message || "Error occurred while updating the chart data."
+        );
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error("An unexpected error occurred. Please try again.");
+    }
+  };
+
+  const uploadFile = async (url, file) => {
+    console.log("File uploading...");
+    try {
+      const response = await fetch(url, {
+        method: "PUT",
+        headers: {
+          "Content-Type": file.type,
+        },
+        body: file,
+      });
+
+      if (response.status === 200) {
+        return "File uploaded successfully!";
+      } else {
+        throw new Error("Error uploading file");
+      }
+    } catch (error) {
+      throw new Error("Error uploading file");
+    }
+  };
+
   const handleUpload = async () => {
     if (!file) {
       toast.error("Please select a file to upload.");
@@ -167,9 +251,8 @@ const QuizView = () => {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-
         body: JSON.stringify({
-          folderName: "quizes",
+          folderName: "charts",
           format: fileExt,
         }),
       });
@@ -180,31 +263,21 @@ const QuizView = () => {
         toast.success("Image uploaded successfully!");
       } else {
         toast.error(urlData.message);
+        return;
       }
 
       const url = urlData.data.signedUrl;
       const key = urlData.data.key;
+      console.log("key in handle upload", key);
       setImage(key);
 
-      const xhr = new XMLHttpRequest();
-      xhr.open("PUT", url, true);
-      xhr.setRequestHeader("Content-Type", file.type);
-
-      xhr.onreadystatechange = function () {
-        if (xhr.readyState === 4 && xhr.status === 200) {
-          toast.success("File uploaded successfully!");
-          // Handle the successful upload
-        }
-      };
-
-      xhr.onerror = function () {
-        console.error("Error uploading file");
-        toast.error("Error uploading file.");
-        // Handle the error
-      };
-
-      xhr.send(file);
-      // console.log(file);
+      console.log("Uploading file started...");
+      const uploadResponse = await uploadFile(url, file);
+      console.log("File uploaded successfully!");
+      toast.success(uploadResponse);
+      console.log("finished hande upload fn");
+      return key;
+      // Handle the successful upload
     } catch (error) {
       console.error("Error fetching upload URL:", error);
       toast.error("An error occurred while fetching the upload URL.");
@@ -212,10 +285,10 @@ const QuizView = () => {
   };
 
   return (
-    <div>
+    <div className="p-10">
       <Toaster />
       <div className="flex justify-between">
-        <h1 className="text-4xl text-bold ">Quiz</h1>
+        <h1 className="text-4xl text-bold text-center">{title}</h1>
         <button
           className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
           onClick={() => setShowForm(true)}
@@ -232,25 +305,36 @@ const QuizView = () => {
                 <button onClick={() => setShowForm(false)}>X</button>
               </div>
               <label htmlFor="name" className="block mb-2 font-bold">
-                Name:
+                Topic:
+              </label>
+              <input
+                type="text"
+                id="topic"
+                name="topic"
+                value={title}
+                default
+                className="w-full border rounded-md px-3 py-2 mt-1 focus:outline-none focus:ring focus:border-blue-300"
+              />
+              <label htmlFor="name" className="block mb-2 font-bold">
+                Section:
               </label>
               <input
                 type="text"
                 id="name"
                 className="w-full border border-gray-300 px-3 py-2 mb-4 rounded"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                value={section}
+                onChange={(e) => setSection(e.target.value)}
                 required
               />
               <label htmlFor="name" className="block mb-2 font-bold">
-                Embed Link:
+                Body:
               </label>
               <input
                 type="text"
                 id="name"
                 className="w-full border border-gray-300 px-3 py-2 mb-4 rounded"
-                value={embed}
-                onChange={(e) => setEmbed(e.target.value)}
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
                 required
               />
 
@@ -265,19 +349,6 @@ const QuizView = () => {
                 accept="image/*" // Add accept attribute to allow only image files
                 required
               />
-
-              <label htmlFor="imageLink" className="block mb-2 font-bold">
-                No of Questions:
-              </label>
-              <input
-                type="integer"
-                id="count"
-                className="w-full border border-gray-300 px-3 py-2 mb-4 rounded"
-                value={count}
-                onChange={(e) => setCount(e.target.value)}
-                required
-              />
-
               <input
                 type="submit"
                 className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
@@ -306,12 +377,15 @@ const QuizView = () => {
                 />
               </div>
               <div className="text-center">
-                <h2 className="text-lg font-semibold">{item.name}</h2>
+                <h2 className="text-lg font-semibold">{item.section}</h2>
                 {/* <p className="text-gray-600">£ {item.price}</p> */}
               </div>
               <div className="ml-auto space-x-2">
                 <button
-                  onClick={() => handleEdit(item.id)}
+                  onClick={() => {
+                    setEditFormVisible(true);
+                    setId(item.id);
+                  }}
                   className="px-3 py-1 text-white bg-blue-500 rounded hover:bg-blue-600"
                 >
                   Edit
@@ -340,40 +414,60 @@ const QuizView = () => {
                   htmlFor="name"
                   className="block font-medium text-gray-700"
                 >
-                  Name:
+                  Topic:
                 </label>
                 <input
                   type="text"
-                  id="name"
-                  name="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  id="topic"
+                  name="topic"
+                  value={title}
+                  default
                   className="w-full border rounded-md px-3 py-2 mt-1 focus:outline-none focus:ring focus:border-blue-300"
                 />
               </div>
               <div className="mb-4">
-                <label
-                  htmlFor="price"
-                  className="block font-medium text-gray-700"
-                >
-                  Price:
+                <label htmlFor="name" className="block mb-2 font-bold">
+                  Section:
                 </label>
                 <input
-                  type="number"
-                  id="price"
-                  name="price"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                  className="w-full border rounded-md px-3 py-2 mt-1 focus:outline-none focus:ring focus:border-blue-300"
+                  type="text"
+                  id="name"
+                  className="w-full border border-gray-300 px-3 py-2 mb-4 rounded"
+                  value={editSection}
+                  onChange={(e) => setEditSection(e.target.value)}
                 />
               </div>
+              <div className="mb-4">
+                <label htmlFor="name" className="block mb-2 font-bold">
+                  Body:
+                </label>
+                <input
+                  type="text"
+                  id="name"
+                  className="w-full border border-gray-300 px-3 py-2 mb-4 rounded"
+                  value={editBody}
+                  onChange={(e) => setEditBody(e.target.value)}
+                />
+              </div>
+              <div className="mb-4">
+                <label htmlFor="imageLink" className="block mb-2 font-bold">
+                  Image:
+                </label>
+                <input
+                  type="file" // Use type="file" for image input
+                  id="image"
+                  className="w-full border border-gray-300 px-3 py-2 mb-4 rounded"
+                  onChange={handleFileChange} // Store the image data in the state
+                  accept="image/*" // Add accept attribute to allow only image files
+                />
+              </div>
+
               <div className="flex justify-end">
-                <button
+                <input
                   type="submit"
-                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                >
-                  Save
-                </button>
+                  className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                  value="Submit"
+                />
                 <button
                   type="button"
                   onClick={hideEditForm}
@@ -413,4 +507,4 @@ const QuizView = () => {
   );
 };
 
-export default QuizView;
+export default Charts;
