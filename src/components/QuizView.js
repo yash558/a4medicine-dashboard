@@ -2,11 +2,11 @@ import React, { useState, useEffect } from "react";
 import toast, { Toaster } from "react-hot-toast";
 
 import API from "../API";
+import Loading from "./Loading";
 
 const Charts = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [topic, setTopic] = useState("");
   const [editFormVisible, setEditFormVisible] = useState(false);
   const token = localStorage.getItem("token");
   const [showForm, setShowForm] = useState(false);
@@ -15,43 +15,35 @@ const Charts = () => {
   const [file, setFile] = useState(null);
   const [fileExt, setFileExtension] = useState("");
   const [showNotification, setShowNotification] = useState(false);
-  const urlId = window.location.href.split("chart/")[1];
-  const [title, setTitle] = useState("");
-  const [body, setBody] = useState("");
-  const [section, setSection] = useState("");
-  const [editTopic, setEditTopic] = useState("");
-  const [editBody, setEditBody] = useState("");
-  const [editSection, setEditSection] = useState("");
+
+  const [editName, setEditName] = useState("");
+  const [editLink, setEditLink] = useState("");
+  const [name, setName] = useState("");
+  const [link, setLink] = useState("");
+  const [count, setCount] = useState("");
+  const [editCount, setEditCount] = useState("");
 
   // function to get all data from api
   useEffect(() => {
     const getData = async () => {
       setLoading(true);
       try {
-        const response = await fetch(`${API}quiz`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
+        const response = await fetch(`${API}quiz`);
         const dat = await response.json();
-        const sortedData = [...dat?.data.section].sort((a, b) =>
-          a.topic.localeCompare(b.topic)
+        const sortedData = [...dat?.data?.quizes].sort((a, b) =>
+          a.name.localeCompare(b.name)
         );
-
         if (dat.status === "success") {
-          setLoading(false);
           setData(sortedData);
-          setTitle(dat?.data?.topic);
-        } else {
-          toast.error(dat.message);
           setLoading(false);
+        } else {
         }
       } catch (error) {
-        setLoading(false);
-        toast.error(error.message);
+        console.error(error);
+        // Handle the error, e.g., show an error message to the user
       }
     };
+
     getData();
   }, []);
 
@@ -74,7 +66,7 @@ const Charts = () => {
   // function to delete a data
   const handleDelete = async () => {
     try {
-      const response = await fetch(`${API}section/${id}`, {
+      const response = await fetch(`${API}quiz/${id}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -101,12 +93,9 @@ const Charts = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      let key;
-      key = await handleUpload();
-      console.log("moving to update in DB...");
-      console.log(image);
-      const apiUrl = `${API}/section/${urlId}`;
+      const key = await handleUpload();
 
+      const apiUrl = `${API}/quiz`;
       const response = await fetch(apiUrl, {
         method: "POST",
         headers: {
@@ -114,27 +103,32 @@ const Charts = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          topic: title,
+          name,
+          embed: link,
+          count,
           image: key,
-          body: body,
-          section: section,
         }),
       });
 
-      const data = await response.json();
-      // console.log("Response:", data);
-
-      if (response.ok && data.status === "success") {
-        toast.success("New Chart Topic Created!");
-      } else {
-        toast.error(
-          data.message || "Error occurred while creating the chart topic."
-        );
+      if (!response.ok) {
+        // Handle non-JSON response (e.g., HTML error page)
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.indexOf("application/json") === -1) {
+          throw new Error("Server returned an error");
+        }
       }
 
-      // Hide the form popup after submitting
+      const data = await response.json();
+
+      if (response.ok && data.status === "success") {
+        toast.success("New Quiz Created!");
+      } else {
+        const errorMessage =
+          data.message || "Error occurred while creating the quiz.";
+        toast.error(errorMessage);
+      }
+
       setShowForm(false);
-      // Clear the form fields after submission
     } catch (error) {
       console.error("Error:", error);
       toast.error("An unexpected error occurred. Please try again.");
@@ -167,22 +161,22 @@ const Charts = () => {
         key = await handleUpload();
         console.log("moving to update in DB...");
       }
-      const apiUrl = `${API}section/${id}`;
+      const apiUrl = `${API}quiz/${id}`;
       const newBody = {};
 
       console.log("image", key);
 
-      if (editTopic !== "") {
-        newBody.topic = title;
-      }
       if (key !== "") {
         newBody.image = key;
       }
-      if (editSection !== "") {
-        newBody.section = editSection;
+      if (editName !== "") {
+        newBody.name = editName;
       }
-      if (editBody !== "") {
-        newBody.body = editBody;
+      if (editCount !== "") {
+        newBody.count = editCount;
+      }
+      if (editLink !== "") {
+        newBody.embed = editLink;
       }
 
       console.log(newBody);
@@ -288,7 +282,7 @@ const Charts = () => {
     <div className="p-10">
       <Toaster />
       <div className="flex justify-between">
-        <h1 className="text-4xl text-bold text-center">{title}</h1>
+        <h1 className="text-4xl text-bold text-center">Quiz</h1>
         <button
           className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
           onClick={() => setShowForm(true)}
@@ -305,36 +299,36 @@ const Charts = () => {
                 <button onClick={() => setShowForm(false)}>X</button>
               </div>
               <label htmlFor="name" className="block mb-2 font-bold">
-                Topic:
+                Name:
               </label>
               <input
                 type="text"
-                id="topic"
-                name="topic"
-                value={title}
-                default
+                id="name"
+                name="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
                 className="w-full border rounded-md px-3 py-2 mt-1 focus:outline-none focus:ring focus:border-blue-300"
               />
               <label htmlFor="name" className="block mb-2 font-bold">
-                Section:
+                Emded Link:
               </label>
               <input
                 type="text"
                 id="name"
                 className="w-full border border-gray-300 px-3 py-2 mb-4 rounded"
-                value={section}
-                onChange={(e) => setSection(e.target.value)}
+                value={link}
+                onChange={(e) => setLink(e.target.value)}
                 required
               />
               <label htmlFor="name" className="block mb-2 font-bold">
-                Body:
+                No of Questions:
               </label>
               <input
-                type="text"
+                type="number"
                 id="name"
                 className="w-full border border-gray-300 px-3 py-2 mb-4 rounded"
-                value={body}
-                onChange={(e) => setBody(e.target.value)}
+                value={count}
+                onChange={(e) => setCount(e.target.value)}
                 required
               />
 
@@ -377,8 +371,8 @@ const Charts = () => {
                 />
               </div>
               <div className="text-center">
-                <h2 className="text-lg font-semibold">{item.section}</h2>
-                {/* <p className="text-gray-600">£ {item.price}</p> */}
+                <h2 className="text-lg font-semibold">{item.name}</h2>
+                <p className="text-gray-600">No of Questions : {item.count}</p>
               </div>
               <div className="ml-auto space-x-2">
                 <button
@@ -407,48 +401,50 @@ const Charts = () => {
       {editFormVisible && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-75">
           <div className="bg-white p-8 rounded-lg shadow-lg">
-            <h2 className="text-lg font-semibold mb-4">Edit Book</h2>
+            <h2 className="text-lg font-semibold mb-4">Edit Quiz</h2>
             <form onSubmit={handleEditSubmit}>
               <div className="mb-4">
                 <label
                   htmlFor="name"
                   className="block font-medium text-gray-700"
                 >
-                  Topic:
+                  Name:
                 </label>
                 <input
                   type="text"
-                  id="topic"
-                  name="topic"
-                  value={title}
-                  default
+                  id="name"
+                  name="name"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
                   className="w-full border rounded-md px-3 py-2 mt-1 focus:outline-none focus:ring focus:border-blue-300"
                 />
               </div>
               <div className="mb-4">
                 <label htmlFor="name" className="block mb-2 font-bold">
-                  Section:
+                  Embed Link:
                 </label>
                 <input
                   type="text"
-                  id="name"
+                  id="link"
                   className="w-full border border-gray-300 px-3 py-2 mb-4 rounded"
-                  value={editSection}
-                  onChange={(e) => setEditSection(e.target.value)}
+                  value={editLink}
+                  onChange={(e) => setEditLink(e.target.value)}
                 />
               </div>
               <div className="mb-4">
                 <label htmlFor="name" className="block mb-2 font-bold">
-                  Body:
+                  No of Questions:
                 </label>
                 <input
-                  type="text"
+                  type="number"
                   id="name"
                   className="w-full border border-gray-300 px-3 py-2 mb-4 rounded"
-                  value={editBody}
-                  onChange={(e) => setEditBody(e.target.value)}
+                  value={editCount}
+                  onChange={(e) => setEditCount(e.target.value)}
+                  required
                 />
               </div>
+
               <div className="mb-4">
                 <label htmlFor="imageLink" className="block mb-2 font-bold">
                   Image:
