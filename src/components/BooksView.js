@@ -11,6 +11,12 @@ const BooksView = () => {
   const [editingBook, setEditingBook] = useState(null);
   const [editFormVisible, setEditFormVisible] = useState(false);
   const token = localStorage.getItem("token");
+  const [file, setFile] = useState("");
+  const [fileExt, setFileExtension] = useState("");
+  const [image, setImage] = useState("");
+  const [payementLink, setPaymenetLink] = useState("");
+  const [description, setDescription] = useState("");
+  const [showForm, setShowForm] = useState(false);
   const getData = async () => {
     
     setLoading(true);
@@ -102,10 +108,133 @@ const BooksView = () => {
     setEditFormVisible(false);
   };
 
-  const handleSave = () => {
-    handleEditSubmit();
+ 
+
+    // function to get a file name
+    const handleFileChange = (e) => {
+      const selectedFile = e.target.files[0];
+      setFile(selectedFile);
+  
+      // Get the file name (including the extension)
+      const fileName = selectedFile.name;
+  
+      // Split the file name to extract the file extension
+      const parts = fileName.split(".");
+      const fileExtension = parts[parts.length - 1]; // Get the last part which is the file extension
+      setFileExtension(fileExtension);
+    };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const key = await handleUpload();
+
+      const apiUrl = `${API}/quiz`;
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name,
+          price,
+          payementLink: payementLink,
+          description,
+          image: key,
+        }),
+      });
+
+      if (!response.ok) {
+        // Handle non-JSON response (e.g., HTML error page)
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.indexOf("application/json") === -1) {
+          throw new Error("Server returned an error");
+        }
+      }
+
+      const data = await response.json();
+
+      if (response.ok && data.status === "success") {
+        toast.success("New Quiz Created!");
+      } else {
+        const errorMessage =
+          data.message || "Error occurred while creating the quiz.";
+        toast.error(errorMessage);
+      }
+
+      setShowForm(false);
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error("An unexpected error occurred. Please try again.");
+    }
   };
 
+  const uploadFile = async (url, file) => {
+    console.log("File uploading...");
+    try {
+      const response = await fetch(url, {
+        method: "PUT",
+        headers: {
+          "Content-Type": file.type,
+        },
+        body: file,
+      });
+
+      if (response.status === 200) {
+        return "File uploaded successfully!";
+      } else {
+        throw new Error("Error uploading file");
+      }
+    } catch (error) {
+      throw new Error("Error uploading file");
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!file) {
+      toast.error("Please select a file to upload.");
+      return;
+    }
+
+    try {
+      const urlResponse = await fetch(`${API}image`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          folderName: "charts",
+          format: fileExt,
+        }),
+      });
+
+      const urlData = await urlResponse.json();
+
+      if (urlData.status === "success") {
+        toast.success("Image uploaded successfully!");
+      } else {
+        toast.error(urlData.message);
+        return;
+      }
+
+      const url = urlData.data.signedUrl;
+      const key = urlData.data.key;
+      console.log("key in handle upload", key);
+      setImage(key);
+
+      console.log("Uploading file started...");
+      const uploadResponse = await uploadFile(url, file);
+      console.log("File uploaded successfully!");
+      toast.success(uploadResponse);
+      console.log("finished hande upload fn");
+      return key;
+      // Handle the successful upload
+    } catch (error) {
+      console.error("Error fetching upload URL:", error);
+      toast.error("An error occurred while fetching the upload URL.");
+    }
+  };
   return (
     <div>
       <Toaster />

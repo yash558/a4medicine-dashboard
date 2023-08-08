@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import toast, { Toaster } from "react-hot-toast";
-
 import API from "../API";
 import Loading from "./Loading";
 
@@ -15,7 +14,6 @@ const Charts = () => {
   const [file, setFile] = useState(null);
   const [fileExt, setFileExtension] = useState("");
   const [showNotification, setShowNotification] = useState(false);
-
   const [editName, setEditName] = useState("");
   const [editLink, setEditLink] = useState("");
   const [name, setName] = useState("");
@@ -480,7 +478,7 @@ const Charts = () => {
         {showNotification && (
           <div className="bg-white border  top-0 fixed z-[1000] rounded-lg p-4 mt-4">
             <p className="text-gray-800 text-lg mb-2">
-              Are you sure you want to cancel your plan?
+              Are you sure you want to cancel your Quiz?
             </p>
             <div className="flex justify-end">
               <button
