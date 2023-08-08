@@ -1,88 +1,54 @@
 import React, { useState, useEffect } from "react";
-import API from "../API";
 import toast, { Toaster } from "react-hot-toast";
+import API from "../API";
 import Loading from "./Loading";
 
 const PanelistView = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [name, setName] = useState("");
-  const [price, setPrice] = useState("");
-  const [editingBook, setEditingBook] = useState(null);
   const [editFormVisible, setEditFormVisible] = useState(false);
   const token = localStorage.getItem("token");
+  const [showForm, setShowForm] = useState(false);
+  const [image, setImage] = useState("");
+  const [id, setId] = useState(null);
   const [file, setFile] = useState(null);
   const [fileExt, setFileExtension] = useState("");
   const [showNotification, setShowNotification] = useState(false);
-  const [id, setId] = useState(null);
-  const getData = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch(`${API}pannellist`);
-      const dat = await response.json();
-    //   console.log(dat.data.books);
-      if (dat.status === "success") {
-        setLoading(false);
-        setData(dat?.data.pannellists);
-        console.log(dat?.data.quizes);
-      } else {
-        toast.error(dat.message);
+  const [name, setName] = useState("");
+  const [editName, setEditName] = useState("");
+
+  const [degree, setDegree] = useState("");
+  const [editDegree, setEditDegree] = useState("");
+  const [position, setPosition] = useState("");
+  const [editPosition, setEditPosition] = useState("");
+  const [description, setDescription] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+
+  // function to get all data from api
+  useEffect(() => {
+    const getPanelist = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch(`${API}pannellist`);
+        if (response.ok) {
+          const data = await response.json();
+          setData(data?.data?.pannellists);
+          setLoading(false);
+        } else {
+          toast.error(response.data.message);
+          setLoading(false);
+        }
+      } catch (error) {
+        toast.error(error.message);
         setLoading(false);
       }
-    } catch (error) {
-      setLoading(false);
-      toast.error(error.message);
-    }
-  };
+    };
 
-  useEffect(() => {
-    getData();
+    getPanelist();
   }, []);
 
-  const handleEdit = (book) => {
-    setEditingBook(book);
-    setName(book.name);
-    setPrice(book.price);
-    setEditFormVisible(true);
-  };
-  console.log(data);
-  const handleEditSubmit = async (event) => {
-    event.preventDefault();
-
-    const formData = new FormData(event.target);
-
-    try {
-      const response = await fetch(`${API}book/${editingBook.id}`, {
-        method: "PUT",
-        body: formData,
-      });
-
-      const result = await response.json();
-      if (result.status === "success") {
-        const updatedData = data.map((book) => {
-          if (book.id === editingBook.id) {
-            return {
-              ...book,
-              name: formData.get("name"),
-              price: formData.get("price"),
-            };
-          }
-          return book;
-        });
-        setData(updatedData);
-        toast.success("Book updated successfully!");
-        hideEditForm();
-      } else {
-        toast.error(result.message);
-      }
-    } catch (error) {
-      toast.error("An error occurred while updating the book.");
-    }
-  };
-
-
   //  notification to confirm delete
-  const handleQuizCancel = () => {
+  const handlepanelistCancel = () => {
     setShowNotification(true);
   };
 
@@ -100,7 +66,7 @@ const PanelistView = () => {
   // function to delete a data
   const handleDelete = async () => {
     try {
-      const response = await fetch(`${API}quiz/${id}`, {
+      const response = await fetch(`${API}pannellist/${id}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -110,7 +76,7 @@ const PanelistView = () => {
       const result = await response.json();
       console.log(result);
       if (result.status === "success") {
-        toast.success("Quiz deleted successfully!");
+        toast.success("Panelist deleted successfully!");
         setData((prevData) => prevData.filter((book) => book.id !== id));
       } else {
         toast.error(result.message);
@@ -124,15 +90,280 @@ const PanelistView = () => {
     setEditFormVisible(false);
   };
 
-  const handleSave = () => {
-    handleEditSubmit();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const key = await handleUpload();
+      const apiUrl = `${API}pannellist`;
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name,
+          degree,
+          position,
+          description,
+          image: key,
+        }),
+      });
+
+      if (!response.ok) {
+        // Handle non-JSON response (e.g., HTML error page)
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.indexOf("application/json") === -1) {
+          throw new Error("Server returned an error");
+        }
+      }
+
+      const data = await response.json();
+      if (response.ok && data.status === "success") {
+        toast.success("New panelist Created!");
+      } else {
+        const errorMessage =
+          data.message || "Error occurred while creating the panelist.";
+        toast.error(errorMessage);
+      }
+
+      setShowForm(false);
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error("An unexpected error occurred. Please try again.");
+    }
+  };
+
+  // function to get a file name
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    setFile(selectedFile);
+
+    // Get the file name (including the extension)
+    const fileName = selectedFile.name;
+
+    // Split the file name to extract the file extension
+    const parts = fileName.split(".");
+    const fileExtension = parts[parts.length - 1]; // Get the last part which is the file extension
+    setFileExtension(fileExtension);
+  };
+
+  // console.log(url)
+
+  // function to edit a chart
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      let key;
+      // If the file is selected for upload, upload the image and get the URL
+      if (file) {
+        key = await handleUpload();
+        console.log("moving to update in DB...");
+      }
+      const apiUrl = `${API}pannellist/${id}`;
+      const newBody = {};
+
+      console.log("image", key);
+
+      if (key !== "") {
+        newBody.image = key;
+      }
+      if (editName !== "") {
+        newBody.name = editName;
+      }
+      if (editDegree !== "") {
+        newBody.degree = editDegree;
+      }
+      if (editPosition !== "") {
+        newBody.position = editPosition;
+      }
+      if (editDescription !== "") {
+        newBody.description = editDescription;
+      }
+
+      console.log(newBody);
+      const response = await fetch(apiUrl, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+
+        body: JSON.stringify(newBody),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.status === "success") {
+        toast.success("Panelist data updated successfully!");
+        // Update the data state with the edited values
+        setData((prevData) =>
+          prevData.map((item) => (item.id === id ? { ...item, newBody } : item))
+        );
+        // Hide the edit form
+        hideEditForm();
+      } else {
+        toast.error(
+          data.message || "Error occurred while updating the chart data."
+        );
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error("An unexpected error occurred. Please try again.");
+    }
+  };
+
+  const uploadFile = async (url, file) => {
+    console.log("File uploading...");
+    try {
+      const response = await fetch(url, {
+        method: "PUT",
+        headers: {
+          "Content-Type": file.type,
+        },
+        body: file,
+      });
+
+      if (response.status === 200) {
+        return "File uploaded successfully!";
+      } else {
+        throw new Error("Error uploading file");
+      }
+    } catch (error) {
+      throw new Error("Error uploading file");
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!file) {
+      toast.error("Please select a file to upload.");
+      return;
+    }
+
+    try {
+      const urlResponse = await fetch(`${API}image`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          folderName: "charts",
+          format: fileExt,
+        }),
+      });
+
+      const urlData = await urlResponse.json();
+
+      if (urlData.status === "success") {
+        toast.success("Image uploaded successfully!");
+      } else {
+        toast.error(urlData.message);
+        return;
+      }
+
+      const url = urlData.data.signedUrl;
+      const key = urlData.data.key;
+      console.log("key in handle upload", key);
+      setImage(key);
+
+      console.log("Uploading file started...");
+      const uploadResponse = await uploadFile(url, file);
+      console.log("File uploaded successfully!");
+      toast.success(uploadResponse);
+      console.log("finished hande upload fn");
+      return key;
+      // Handle the successful upload
+    } catch (error) {
+      console.error("Error fetching upload URL:", error);
+      toast.error("An error occurred while fetching the upload URL.");
+    }
   };
 
   return (
-    <div>
+    <div className="p-10">
       <Toaster />
-      <div className="r">
-        <h1 className="text-4xl text-bold ">Panelist</h1>
+      <div className="flex justify-between">
+        <h1 className="text-4xl text-bold text-center">Our Panelist</h1>
+        <button
+          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          onClick={() => setShowForm(true)}
+        >
+          Create
+        </button>
+        {showForm && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-25">
+            <form
+              className="bg-white p-8 rounded shadow-md w-96"
+              onSubmit={handleSubmit}
+            >
+              <div className="flex items-end justify-end">
+                <button onClick={() => setShowForm(false)}>X</button>
+              </div>
+              <label htmlFor="name" className="block mb-2 font-bold">
+                Name:
+              </label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full border rounded-md px-3 py-2 mt-1 focus:outline-none focus:ring focus:border-blue-300"
+              />
+              <label htmlFor="name" className="block mb-2 font-bold">
+                Degree:
+              </label>
+              <input
+                type="text"
+                id="degree"
+                className="w-full border border-gray-300 px-3 py-2 mb-4 rounded"
+                value={degree}
+                onChange={(e) => setDegree(e.target.value)}
+                required
+              />
+              <label htmlFor="name" className="block mb-2 font-bold">
+                Position:
+              </label>
+              <input
+                type="text"
+                id="position"
+                className="w-full border border-gray-300 px-3 py-2 mb-4 rounded"
+                value={position}
+                onChange={(e) => setPosition(e.target.value)}
+                required
+              />
+              <label htmlFor="name" className="block mb-2 font-bold">
+                Description:
+              </label>
+              <input
+                type="text"
+                id="desc"
+                className="w-full border border-gray-300 px-3 py-2 mb-4 rounded"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                required
+              />
+
+              <label htmlFor="imageLink" className="block mb-2 font-bold">
+                Image:
+              </label>
+              <input
+                type="file" // Use type="file" for image input
+                id="image"
+                className="w-full border border-gray-300 px-3 py-2 mb-4 rounded"
+                onChange={handleFileChange} // Store the image data in the state
+                accept="image/*" // Add accept attribute to allow only image files
+                required
+              />
+              <input
+                type="submit"
+                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                value="Submit"
+              />
+            </form>
+          </div>
+        )}
       </div>
       {loading ? (
         <div className="h-screen flex items-center justify-center">
@@ -154,17 +385,23 @@ const PanelistView = () => {
               </div>
               <div className="text-center">
                 <h2 className="text-lg font-semibold">{item.name}</h2>
-                {/* <p className="text-gray-600">£ {item.price}</p> */}
+                <p className="text-gray-600">{item.degree}</p>
               </div>
               <div className="ml-auto space-x-2">
                 <button
-                  onClick={() => handleEdit(item.id)}
+                  onClick={() => {
+                    setEditFormVisible(true);
+                    setId(item.id);
+                  }}
                   className="px-3 py-1 text-white bg-blue-500 rounded hover:bg-blue-600"
                 >
                   Edit
                 </button>
                 <button
-                  onClick={() => handleDelete(item.id)}
+                  onClick={() => {
+                    setId(item.id);
+                    handlepanelistCancel();
+                  }}
                   className="px-3 py-1 text-white bg-red-500 rounded hover:bg-red-600"
                 >
                   Delete
@@ -176,48 +413,78 @@ const PanelistView = () => {
       )}
       {editFormVisible && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-75">
-          <div className="bg-white p-8 rounded-lg shadow-lg">
-            <h2 className="text-lg font-semibold mb-4">Edit Book</h2>
+          <div className="bg-white   p-8 rounded-lg shadow-lg">
+            <h2 className="text-lg font-semibold mb-4">Edit panelist</h2>
             <form onSubmit={handleEditSubmit}>
               <div className="mb-4">
-                <label
-                  htmlFor="name"
-                  className="block font-medium text-gray-700"
-                >
+                <label htmlFor="imageLink" className="block mb-2 font-bold">
                   Name:
                 </label>
                 <input
                   type="text"
                   id="name"
                   name="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
                   className="w-full border rounded-md px-3 py-2 mt-1 focus:outline-none focus:ring focus:border-blue-300"
                 />
               </div>
               <div className="mb-4">
-                <label
-                  htmlFor="price"
-                  className="block font-medium text-gray-700"
-                >
-                  Price:
+                <label htmlFor="name" className="block mb-2 font-bold">
+                  Degree:
                 </label>
                 <input
-                  type="number"
-                  id="price"
-                  name="price"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                  className="w-full border rounded-md px-3 py-2 mt-1 focus:outline-none focus:ring focus:border-blue-300"
+                  type="text"
+                  id="degree"
+                  className="w-full border border-gray-300 px-3 py-2 mb-4 rounded"
+                  value={editDegree}
+                  onChange={(e) => setEditDegree(e.target.value)}
                 />
               </div>
+              <div className="mb-4">
+                <label htmlFor="name" className="block mb-2 font-bold">
+                  Position:
+                </label>
+                <input
+                  type="text"
+                  id="name"
+                  className="w-full border border-gray-300 px-3 py-2 mb-4 rounded"
+                  value={editPosition}
+                  onChange={(e) => setEditPosition(e.target.value)}
+                />
+              </div>
+              <div className="mb-4">
+                <label htmlFor="desc" className="block mb-2 font-bold">
+                  Description:
+                </label>
+                <input
+                  type="text"
+                  id="desc"
+                  className="w-full border border-gray-300 px-3 py-2 mb-4 rounded resizable-input"
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                />
+              </div>
+
+              <div className="mb-4">
+                <label htmlFor="imageLink" className="block mb-2 font-bold">
+                  Image:
+                </label>
+                <input
+                  type="file" // Use type="file" for image input
+                  id="image"
+                  className="w-full border border-gray-300 px-3 py-2 mb-4 rounded"
+                  onChange={handleFileChange} // Store the image data in the state
+                  accept="image/*" // Add accept attribute to allow only image files
+                />
+              </div>
+
               <div className="flex justify-end">
-                <button
+                <input
                   type="submit"
-                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                >
-                  Save
-                </button>
+                  className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                  value="Submit"
+                />
                 <button
                   type="button"
                   onClick={hideEditForm}
@@ -230,6 +497,29 @@ const PanelistView = () => {
           </div>
         </div>
       )}
+      <div className="flex items-center justify-center">
+        {showNotification && (
+          <div className="bg-white border  top-0 fixed z-[1000] rounded-lg p-4 mt-4">
+            <p className="text-gray-800 text-lg mb-2">
+              Are you sure you want to cancel your Panelist?
+            </p>
+            <div className="flex justify-end">
+              <button
+                className="bg-green-500 text-white px-4 py-2 rounded mr-2"
+                onClick={handleConfirm}
+              >
+                Confirm
+              </button>
+              <button
+                className="bg-red-500 text-white px-4 py-2 rounded"
+                onClick={handleCancel}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
