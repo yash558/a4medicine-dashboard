@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from "react";
-
 import toast, { Toaster } from "react-hot-toast";
-
 import API from "./../../API";
 import Loading from "./../../components/Loading";
 
-const ChartTopic = () => {
+const Charts = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [topic, setTopic] = useState("");
   const [editFormVisible, setEditFormVisible] = useState(false);
+  const token = localStorage.getItem("token");
   const [showForm, setShowForm] = useState(false);
   const [image, setImage] = useState("");
   const [id, setId] = useState(null);
@@ -17,9 +16,9 @@ const ChartTopic = () => {
   const [fileExt, setFileExtension] = useState("");
   const [showNotification, setShowNotification] = useState(false);
   const urlId = window.location.href.split("chart/")[1];
-  const token = localStorage.getItem("token");
-  const [section, setSection] = useState("");
+  const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
+  const [section, setSection] = useState("");
   const [editTopic, setEditTopic] = useState("");
   const [editBody, setEditBody] = useState("");
   const [editSection, setEditSection] = useState("");
@@ -40,12 +39,10 @@ const ChartTopic = () => {
           a.topic.localeCompare(b.topic)
         );
 
-        //   console.log(dat.data.books);
         if (dat.status === "success") {
           setLoading(false);
           setData(sortedData);
-          setTopic(dat.data.topic);
-          // console.log(dat?.data.charts);
+          setTitle(dat?.data?.topic);
         } else {
           toast.error(dat.message);
           setLoading(false);
@@ -104,11 +101,11 @@ const ChartTopic = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      if (file) {
-        await handleUpload();
-      }
-
-      const apiUrl = `${API}section/${urlId}`;
+      let key;
+      key = await handleUpload();
+      console.log("moving to update in DB...");
+      console.log(image);
+      const apiUrl = `${API}/section/${urlId}`;
 
       const response = await fetch(apiUrl, {
         method: "POST",
@@ -116,11 +113,16 @@ const ChartTopic = () => {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ topic, section, body, image }),
+        body: JSON.stringify({
+          topic: title,
+          image: key,
+          body: body,
+          section: section,
+        }),
       });
 
       const data = await response.json();
-      console.log("Response:", data);
+      // console.log("Response:", data);
 
       if (response.ok && data.status === "success") {
         toast.success("New Chart Topic Created!");
@@ -133,121 +135,6 @@ const ChartTopic = () => {
       // Hide the form popup after submitting
       setShowForm(false);
       // Clear the form fields after submission
-
-      setSection("");
-      setBody("");
-      setImage("");
-      setFile(null);
-      setFileExtension("");
-    } catch (error) {
-      console.error("Error:", error);
-      toast.error("An unexpected error occurred. Please try again.");
-    }
-  };
-
-  // get a image url from api
-  const handleUpload = async () => {
-    if (!file) {
-      toast.error("Please select a file to upload.");
-      return;
-    }
-
-    try {
-      const urlResponse = await fetch(`${API}image`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-
-        body: JSON.stringify({
-          folderName: "charts",
-          format: fileExt,
-        }),
-      });
-
-      const urlData = await urlResponse.json();
-
-      if (urlData.status === "success") {
-        toast.success("Image uploaded successfully!");
-      } else {
-        toast.error(urlData.message);
-      }
-
-      const url = urlData.data.signedUrl;
-      const key = urlData.data.key;
-      setImage(key);
-
-      const xhr = new XMLHttpRequest();
-      xhr.open("PUT", url, true);
-      xhr.setRequestHeader("Content-Type", file.type);
-
-      xhr.onreadystatechange = function () {
-        if (xhr.readyState === 4 && xhr.status === 200) {
-          toast.success("File uploaded successfully!");
-          // Handle the successful upload
-        }
-      };
-
-      xhr.onerror = function () {
-        console.error("Error uploading file");
-        toast.error("Error uploading file.");
-        // Handle the error
-      };
-
-      xhr.send(file);
-      // console.log(file);
-    } catch (error) {
-      console.error("Error fetching upload URL:", error);
-      toast.error("An error occurred while fetching the upload URL.");
-    }
-  };
-
-  // function to edit a chart topic
-  const handleEditSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      await handleUpload();
-      const apiUrl = `${API}section/${id}`;
-      const response = await fetch(apiUrl, {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          topic: editTopic,
-          body: editBody,
-          section: editSection,
-          image: image,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.status === "success") {
-        toast.success("Chart Topic data updated successfully!");
-        // Update the data state with the edited values
-        setData((prevData) =>
-          prevData.map((item) =>
-            item.id === id
-              ? {
-                  ...item,
-                  topic: editTopic,
-                  body: editBody,
-                  section: editSection,
-                  image: image,
-                }
-              : item
-          )
-        );
-        // Hide the edit form
-        hideEditForm();
-      } else {
-        toast.error(
-          data.message || "Error occurred while updating the chart data."
-        );
-      }
     } catch (error) {
       console.error("Error:", error);
       toast.error("An unexpected error occurred. Please try again.");
@@ -268,11 +155,140 @@ const ChartTopic = () => {
     setFileExtension(fileExtension);
   };
 
+  // console.log(url)
+
+  // function to edit a chart
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      let key;
+      // If the file is selected for upload, upload the image and get the URL
+      if (file) {
+        key = await handleUpload();
+        console.log("moving to update in DB...");
+      }
+      const apiUrl = `${API}section/${id}`;
+      const newBody = {};
+
+      console.log("image", key);
+
+      if (editTopic !== "") {
+        newBody.topic = title;
+      }
+      if (key !== "") {
+        newBody.image = key;
+      }
+      if (editSection !== "") {
+        newBody.section = editSection;
+      }
+      if (editBody !== "") {
+        newBody.body = editBody;
+      }
+
+      console.log(newBody);
+      const response = await fetch(apiUrl, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+
+        body: JSON.stringify(newBody),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.status === "success") {
+        toast.success("Chart data updated successfully!");
+        // Update the data state with the edited values
+        setData((prevData) =>
+          prevData.map((item) => (item.id === id ? { ...item, newBody } : item))
+        );
+        // Hide the edit form
+        hideEditForm();
+      } else {
+        toast.error(
+          data.message || "Error occurred while updating the chart data."
+        );
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error("An unexpected error occurred. Please try again.");
+    }
+  };
+
+  const uploadFile = async (url, file) => {
+    console.log("File uploading...");
+    try {
+      const response = await fetch(url, {
+        method: "PUT",
+        headers: {
+          "Content-Type": file.type,
+        },
+        body: file,
+      });
+
+      if (response.status === 200) {
+        return "File uploaded successfully!";
+      } else {
+        throw new Error("Error uploading file");
+      }
+    } catch (error) {
+      throw new Error("Error uploading file");
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!file) {
+      toast.error("Please select a file to upload.");
+      return;
+    }
+
+    try {
+      const urlResponse = await fetch(`${API}image`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          folderName: "charts",
+          format: fileExt,
+        }),
+      });
+
+      const urlData = await urlResponse.json();
+
+      if (urlData.status === "success") {
+        toast.success("Image uploaded successfully!");
+      } else {
+        toast.error(urlData.message);
+        return;
+      }
+
+      const url = urlData.data.signedUrl;
+      const key = urlData.data.key;
+      console.log("key in handle upload", key);
+      setImage(key);
+
+      console.log("Uploading file started...");
+      const uploadResponse = await uploadFile(url, file);
+      console.log("File uploaded successfully!");
+      toast.success(uploadResponse);
+      console.log("finished hande upload fn");
+      return key;
+      // Handle the successful upload
+    } catch (error) {
+      console.error("Error fetching upload URL:", error);
+      toast.error("An error occurred while fetching the upload URL.");
+    }
+  };
+
   return (
     <div className="p-10">
       <Toaster />
       <div className="flex justify-between">
-        <h1 className="text-4xl text-bold">{topic}</h1>
+        <h1 className="text-4xl text-bold text-center">{title}</h1>
         <button
           className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
           onClick={() => setShowForm(true)}
@@ -293,18 +309,18 @@ const ChartTopic = () => {
               </label>
               <input
                 type="text"
-                id="name"
-                className="w-full border border-gray-300 px-3 py-2 mb-4 rounded"
-                value={topic}
-                onChange={(e) => setTopic(e.target.value)}
-                required
+                id="topic"
+                name="topic"
+                value={title}
+                default
+                className="w-full border rounded-md px-3 py-2 mt-1 focus:outline-none focus:ring focus:border-blue-300"
               />
               <label htmlFor="name" className="block mb-2 font-bold">
                 Section:
               </label>
               <input
                 type="text"
-                id="section"
+                id="name"
                 className="w-full border border-gray-300 px-3 py-2 mb-4 rounded"
                 value={section}
                 onChange={(e) => setSection(e.target.value)}
@@ -315,12 +331,13 @@ const ChartTopic = () => {
               </label>
               <input
                 type="text"
-                id="body"
+                id="name"
                 className="w-full border border-gray-300 px-3 py-2 mb-4 rounded"
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
                 required
               />
+
               <label htmlFor="imageLink" className="block mb-2 font-bold">
                 Image:
               </label>
@@ -332,7 +349,6 @@ const ChartTopic = () => {
                 accept="image/*" // Add accept attribute to allow only image files
                 required
               />
-
               <input
                 type="submit"
                 className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
@@ -391,7 +407,7 @@ const ChartTopic = () => {
       {editFormVisible && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-75">
           <div className="bg-white p-8 rounded-lg shadow-lg">
-            <h2 className="text-lg font-semibold mb-4">Edit Chart Topic</h2>
+            <h2 className="text-lg font-semibold mb-4">Edit Book</h2>
             <form onSubmit={handleEditSubmit}>
               <div className="mb-4">
                 <label
@@ -402,43 +418,35 @@ const ChartTopic = () => {
                 </label>
                 <input
                   type="text"
-                  id="name"
-                  name="name"
-                  value={topic}
-                  onChange={(e) => setEditTopic(e.target.value)}
+                  id="topic"
+                  name="topic"
+                  value={title}
+                  default
                   className="w-full border rounded-md px-3 py-2 mt-1 focus:outline-none focus:ring focus:border-blue-300"
                 />
               </div>
               <div className="mb-4">
-                <label
-                  htmlFor="section"
-                  className="block font-medium text-gray-700"
-                >
+                <label htmlFor="name" className="block mb-2 font-bold">
                   Section:
                 </label>
                 <input
                   type="text"
-                  id="section"
-                  name="section"
+                  id="name"
+                  className="w-full border border-gray-300 px-3 py-2 mb-4 rounded"
                   value={editSection}
                   onChange={(e) => setEditSection(e.target.value)}
-                  className="w-full border rounded-md px-3 py-2 mt-1 focus:outline-none focus:ring focus:border-blue-300"
                 />
               </div>
               <div className="mb-4">
-                <label
-                  htmlFor="body"
-                  className="block font-medium text-gray-700"
-                >
+                <label htmlFor="name" className="block mb-2 font-bold">
                   Body:
                 </label>
                 <input
                   type="text"
-                  id="body"
-                  name="body"
+                  id="name"
+                  className="w-full border border-gray-300 px-3 py-2 mb-4 rounded"
                   value={editBody}
                   onChange={(e) => setEditBody(e.target.value)}
-                  className="w-full border rounded-md px-3 py-2 mt-1 focus:outline-none focus:ring focus:border-blue-300"
                 />
               </div>
               <div className="mb-4">
@@ -451,9 +459,9 @@ const ChartTopic = () => {
                   className="w-full border border-gray-300 px-3 py-2 mb-4 rounded"
                   onChange={handleFileChange} // Store the image data in the state
                   accept="image/*" // Add accept attribute to allow only image files
-                  required
                 />
               </div>
+
               <div className="flex justify-end">
                 <input
                   type="submit"
@@ -499,4 +507,4 @@ const ChartTopic = () => {
   );
 };
 
-export default ChartTopic;
+export default Charts;
