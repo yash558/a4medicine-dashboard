@@ -47,7 +47,7 @@ export const routes = [
         icon: <TableCellsIcon {...icon} />,
         name: "Webinars",
         path: "/users",
-        element: <Tables />,
+        element: <Panelist/>,
       },
       {
         icon: <UsersIcon {...icon} />,

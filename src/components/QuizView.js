@@ -191,7 +191,7 @@ const Charts = () => {
       const data = await response.json();
 
       if (response.ok && data.status === "success") {
-        toast.success("Chart data updated successfully!");
+        toast.success("Quiz data updated successfully!");
         // Update the data state with the edited values
         setData((prevData) =>
           prevData.map((item) => (item.id === id ? { ...item, newBody } : item))

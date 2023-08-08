@@ -14,7 +14,7 @@ const BooksView = () => {
   const [file, setFile] = useState("");
   const [fileExt, setFileExtension] = useState("");
   const [image, setImage] = useState("");
-  const [payementLink, setPaymenetLink] = useState("");
+  const [paymentLink, setPaymentLink] = useState("");
   const [description, setDescription] = useState("");
   const [showForm, setShowForm] = useState(false);
   const getData = async () => {
@@ -138,7 +138,7 @@ const BooksView = () => {
         body: JSON.stringify({
           name,
           price,
-          payementLink: payementLink,
+          paymentLink: paymentLink,
           description,
           image: key,
         }),
