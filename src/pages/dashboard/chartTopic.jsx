@@ -88,7 +88,7 @@ const Charts = ({ placeholder }) => {
       const result = await response.json();
       console.log(result);
       if (result.status === "success") {
-        toast.success("Quiz deleted successfully!");
+        toast.success("Chart deleted successfully!");
         setData((prevData) => prevData.filter((book) => book.id !== id));
       } else {
         toast.error(result.message);
@@ -121,6 +121,7 @@ const Charts = ({ placeholder }) => {
           topic: title,
           image: key,
           body: content,
+          isOld: false,
           section: section,
         }),
       });

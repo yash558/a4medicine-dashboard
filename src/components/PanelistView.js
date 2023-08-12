@@ -24,7 +24,7 @@ const PanelistView = () => {
   const [editPosition, setEditPosition] = useState("");
   const [description, setDescription] = useState("");
   const [editDescription, setEditDescription] = useState("");
-
+  const isOld = false;
   // function to get all data from api
   useEffect(() => {
     const getPanelist = async () => {
@@ -106,6 +106,7 @@ const PanelistView = () => {
           name,
           degree,
           position,
+          
           description,
           image: key,
         }),
