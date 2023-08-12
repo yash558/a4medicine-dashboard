@@ -301,9 +301,9 @@ const Charts = ({ placeholder }) => {
           Create
         </button>
         {showForm && (
-          <div className="fixed inset-0 flex items-center justify-center  bg-black bg-opacity-25">
+          <div className="fixed inset-0 flex items-center justify-center overflow-y-auto   bg-black bg-opacity-25">
             <form
-              className="bg-white p-8 rounded shadow-md min-w-7xl"
+              className="bg-white p-8 rounded shadow-md max-w-7xl "
               onSubmit={handleSubmit}
             >
               <div className="flex items-end justify-end">
@@ -331,15 +331,18 @@ const Charts = ({ placeholder }) => {
                 onChange={(e) => setSection(e.target.value)}
                 required
               />
+              <div className="">
               <label htmlFor="name" className="block mb-2 font-bold">
                 Body:
               </label>
                 <JoditEditor
                   ref={editor}
                   value={content}
+                  height="300px"
                   tabIndex={1} // tabIndex of textarea
                   onChange={(newContent) => setContent(newContent)} // preferred to use only this option to update the content for performance reasons
                 />
+                </div>
               {/* <input
                 type="text"
                 id="name"
