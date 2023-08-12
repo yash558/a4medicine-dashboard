@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import toast, { Toaster } from "react-hot-toast";
 import API from "../API";
 import Loading from "./Loading";
+import JoditEditor from "jodit-react";
 
 const PanelistView = () => {
   const [data, setData] = useState([]);
@@ -16,7 +17,7 @@ const PanelistView = () => {
   const [showNotification, setShowNotification] = useState(false);
   const [name, setName] = useState("");
   const [editName, setEditName] = useState("");
-
+  const editor = useRef(null);
   const [degree, setDegree] = useState("");
   const [editDegree, setEditDegree] = useState("");
   const [position, setPosition] = useState("");
@@ -294,7 +295,7 @@ const PanelistView = () => {
         {showForm && (
           <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-25">
             <form
-              className="bg-white p-8 rounded shadow-md w-96"
+              className="bg-white ml-80 p-4 rounded shadow-md max-w-5xl"
               onSubmit={handleSubmit}
             >
               <div className="flex items-end justify-end">
@@ -336,13 +337,11 @@ const PanelistView = () => {
               <label htmlFor="name" className="block mb-2 font-bold">
                 Description:
               </label>
-              <input
-                type="text"
-                id="desc"
-                className="w-full border border-gray-300 px-3 py-2 mb-4 rounded"
+              <JoditEditor
+                ref={editor}
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                required
+                tabIndex={1} // tabIndex of textarea
+                onChange={(newContent) => setDescription(newContent)} // preferred to use only this option to update the content for performance reasons
               />
 
               <label htmlFor="imageLink" className="block mb-2 font-bold">
@@ -413,10 +412,10 @@ const PanelistView = () => {
       )}
       {editFormVisible && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-75">
-          <div className="bg-white   p-8 rounded-lg shadow-lg">
-            <h2 className="text-lg font-semibold mb-4">Edit panelist</h2>
+          <div className="bg-white ml-80 min-w-4xl  p-4 rounded-lg shadow-lg">
+            <h2 className="text-lg font-semibold mb-2">Edit panelist</h2>
             <form onSubmit={handleEditSubmit}>
-              <div className="mb-4">
+              <div className="mb-2">
                 <label htmlFor="imageLink" className="block mb-2 font-bold">
                   Name:
                 </label>
@@ -429,7 +428,7 @@ const PanelistView = () => {
                   className="w-full border rounded-md px-3 py-2 mt-1 focus:outline-none focus:ring focus:border-blue-300"
                 />
               </div>
-              <div className="mb-4">
+              <div className="">
                 <label htmlFor="name" className="block mb-2 font-bold">
                   Degree:
                 </label>
@@ -441,7 +440,7 @@ const PanelistView = () => {
                   onChange={(e) => setEditDegree(e.target.value)}
                 />
               </div>
-              <div className="mb-4">
+              <div className="">
                 <label htmlFor="name" className="block mb-2 font-bold">
                   Position:
                 </label>
@@ -453,20 +452,19 @@ const PanelistView = () => {
                   onChange={(e) => setEditPosition(e.target.value)}
                 />
               </div>
-              <div className="mb-4">
+              <div className="">
                 <label htmlFor="desc" className="block mb-2 font-bold">
                   Description:
                 </label>
-                <input
-                  type="text"
-                  id="desc"
-                  className="w-full border border-gray-300 px-3 py-2 mb-4 rounded resizable-input"
-                  value={editDescription}
-                  onChange={(e) => setEditDescription(e.target.value)}
-                />
+                <JoditEditor
+                ref={editor}
+                value={editDescription}
+                tabIndex={1} // tabIndex of textarea
+                onChange={(newContent) => setEditDescription(newContent)} // preferred to use only this option to update the content for performance reasons
+              />
               </div>
 
-              <div className="mb-4">
+              <div className="">
                 <label htmlFor="imageLink" className="block mb-2 font-bold">
                   Image:
                 </label>

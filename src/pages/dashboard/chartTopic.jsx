@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import toast, { Toaster } from "react-hot-toast";
 import API from "./../../API";
 import Loading from "./../../components/Loading";
+import JoditEditor from "jodit-react";
 
-const Charts = () => {
+const Charts = ({ placeholder }) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [topic, setTopic] = useState("");
@@ -22,6 +23,9 @@ const Charts = () => {
   const [editTopic, setEditTopic] = useState("");
   const [editBody, setEditBody] = useState("");
   const [editSection, setEditSection] = useState("");
+  const editor = useRef(null);
+  const [content, setContent] = useState("");
+  const [editContent, setEditContent] = useState("");
 
   // function to get all data from api
   useEffect(() => {
@@ -116,7 +120,7 @@ const Charts = () => {
         body: JSON.stringify({
           topic: title,
           image: key,
-          body: body,
+          body: content,
           section: section,
         }),
       });
@@ -181,8 +185,8 @@ const Charts = () => {
       if (editSection !== "") {
         newBody.section = editSection;
       }
-      if (editBody !== "") {
-        newBody.body = editBody;
+      if (editContent !== "") {
+        newBody.body = editContent;
       }
 
       console.log(newBody);
@@ -296,9 +300,9 @@ const Charts = () => {
           Create
         </button>
         {showForm && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-25">
+          <div className="fixed inset-0 flex items-center justify-center  bg-black bg-opacity-25">
             <form
-              className="bg-white p-8 rounded shadow-md w-96"
+              className="bg-white p-8 rounded shadow-md min-w-7xl"
               onSubmit={handleSubmit}
             >
               <div className="flex items-end justify-end">
@@ -315,7 +319,7 @@ const Charts = () => {
                 default
                 className="w-full border rounded-md px-3 py-2 mt-1 focus:outline-none focus:ring focus:border-blue-300"
               />
-              <label htmlFor="name" className="block mb-2 font-bold">
+              <label htmlFor="name" className="block mt-4 mb-2 font-bold">
                 Section:
               </label>
               <input
@@ -329,16 +333,22 @@ const Charts = () => {
               <label htmlFor="name" className="block mb-2 font-bold">
                 Body:
               </label>
-              <input
+                <JoditEditor
+                  ref={editor}
+                  value={content}
+                  tabIndex={1} // tabIndex of textarea
+                  onChange={(newContent) => setContent(newContent)} // preferred to use only this option to update the content for performance reasons
+                />
+              {/* <input
                 type="text"
                 id="name"
                 className="w-full border border-gray-300 px-3 py-2 mb-4 rounded"
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
                 required
-              />
+              /> */}
 
-              <label htmlFor="imageLink" className="block mb-2 font-bold">
+              <label htmlFor="imageLink" className="block mt-4  mb-2 font-bold">
                 Image:
               </label>
               <input
@@ -438,15 +448,14 @@ const Charts = () => {
                 />
               </div>
               <div className="mb-4">
-                <label htmlFor="name" className="block mb-2 font-bold">
-                  Body:
-                </label>
-                <input
-                  type="text"
-                  id="name"
-                  className="w-full border border-gray-300 px-3 py-2 mb-4 rounded"
-                  value={editBody}
-                  onChange={(e) => setEditBody(e.target.value)}
+              <label htmlFor="name" className="block mb-2 font-bold">
+                Body:
+              </label>
+                <JoditEditor
+                  ref={editor}
+                  value={content}
+                  tabIndex={1} // tabIndex of textarea
+                  onChange={(newContent) => setEditContent(newContent)} // preferred to use only this option to update the content for performance reasons
                 />
               </div>
               <div className="mb-4">
