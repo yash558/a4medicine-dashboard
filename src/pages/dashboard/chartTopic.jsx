@@ -3,11 +3,13 @@ import toast, { Toaster } from "react-hot-toast";
 import API from "./../../API";
 import Loading from "./../../components/Loading";
 import JoditEditor from "jodit-react";
+import { Sidenav } from "./../../widgets/layout/sidenav";
+import routes from "../../routes";
 
 const Charts = ({ placeholder }) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [topic, setTopic] = useState("");
+
   const [editFormVisible, setEditFormVisible] = useState(false);
   const token = localStorage.getItem("token");
   const [showForm, setShowForm] = useState(false);
@@ -18,10 +20,10 @@ const Charts = ({ placeholder }) => {
   const [showNotification, setShowNotification] = useState(false);
   const urlId = window.location.href.split("chart/")[1];
   const [title, setTitle] = useState("");
-  const [body, setBody] = useState("");
+
   const [section, setSection] = useState("");
   const [editTopic, setEditTopic] = useState("");
-  const [editBody, setEditBody] = useState("");
+
   const [editSection, setEditSection] = useState("");
   const editor = useRef(null);
   const [content, setContent] = useState("");
@@ -290,144 +292,28 @@ const Charts = ({ placeholder }) => {
   };
 
   return (
-    <div className="p-10">
-      <Toaster />
-      <div className="flex justify-between">
-        <h1 className="text-4xl text-bold text-center">{title}</h1>
-        <button
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-          onClick={() => setShowForm(true)}
-        >
-          Create
-        </button>
-        {showForm && (
-          <div className="fixed inset-0 flex items-center justify-center overflow-y-auto   bg-black bg-opacity-25">
-            <form
-              className="bg-white p-8 rounded shadow-md max-w-7xl "
-              onSubmit={handleSubmit}
-            >
-              <div className="flex items-end justify-end">
-                <button onClick={() => setShowForm(false)}>X</button>
-              </div>
-              <label htmlFor="name" className="block mb-2 font-bold">
-                Topic:
-              </label>
-              <input
-                type="text"
-                id="topic"
-                name="topic"
-                value={title}
-                default
-                className="w-full border rounded-md px-3 py-2 mt-1 focus:outline-none focus:ring focus:border-blue-300"
-              />
-              <label htmlFor="name" className="block mt-4 mb-2 font-bold">
-                Section:
-              </label>
-              <input
-                type="text"
-                id="name"
-                className="w-full border border-gray-300 px-3 py-2 mb-4 rounded"
-                value={section}
-                onChange={(e) => setSection(e.target.value)}
-                required
-              />
-              <div className="">
-              <label htmlFor="name" className="block mb-2 font-bold">
-                Body:
-              </label>
-                <JoditEditor
-                  ref={editor}
-                  value={content}
-                  height="300px"
-                  tabIndex={1} // tabIndex of textarea
-                  onChange={(newContent) => setContent(newContent)} // preferred to use only this option to update the content for performance reasons
-                />
+    <>
+      <Sidenav routes={routes} brandName="A4Medicine" />
+      <div className="p-10 md:ml-80">
+        <Toaster />
+        <div className="flex justify-between">
+          <h1 className="text-4xl text-bold text-center">{title}</h1>
+          <button
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            onClick={() => setShowForm(true)}
+          >
+            Create
+          </button>
+          {showForm && (
+            <div className="fixed inset-0 flex items-center justify-center overflow-y-auto   bg-black bg-opacity-25">
+              <form
+                className="bg-white p-8 rounded shadow-md max-w-7xl "
+                onSubmit={handleSubmit}
+              >
+                <div className="flex items-end justify-end">
+                  <button onClick={() => setShowForm(false)}>X</button>
                 </div>
-              {/* <input
-                type="text"
-                id="name"
-                className="w-full border border-gray-300 px-3 py-2 mb-4 rounded"
-                value={body}
-                onChange={(e) => setBody(e.target.value)}
-                required
-              /> */}
-
-              <label htmlFor="imageLink" className="block mt-4  mb-2 font-bold">
-                Image:
-              </label>
-              <input
-                type="file" // Use type="file" for image input
-                id="image"
-                className="w-full border border-gray-300 px-3 py-2 mb-4 rounded"
-                onChange={handleFileChange} // Store the image data in the state
-                accept="image/*" // Add accept attribute to allow only image files
-                required
-              />
-              <input
-                type="submit"
-                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-                value="Submit"
-              />
-            </form>
-          </div>
-        )}
-      </div>
-      {loading ? (
-        <div className="h-screen flex items-center justify-center">
-          <Loading color="#000000" />
-        </div>
-      ) : (
-        <div className="grid grid-cols-3 gap-8 mt-12">
-          {data.map((item) => (
-            <div
-              className="flex items-center p-4 justify-between rounded-md flex-col bg-white shadow-md space-x-2 space-y-4"
-              key={item.id}
-            >
-              <div>
-                <img
-                  src={`https://a4medicine-charts.s3.ap-southeast-2.amazonaws.com/${item.image}`}
-                  alt={item.name}
-                  className="w-56 h-56"
-                />
-              </div>
-              <div className="text-center">
-                <h2 className="text-lg font-semibold">{item.section}</h2>
-                {/* <p className="text-gray-600">£ {item.price}</p> */}
-              </div>
-              <div className="ml-auto space-x-2">
-                <button
-                  onClick={() => {
-                    setEditFormVisible(true);
-                    setId(item.id);
-                  }}
-                  className="px-3 py-1 text-white bg-blue-500 rounded hover:bg-blue-600"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => {
-                    setId(item.id);
-                    handleQuizCancel();
-                  }}
-                  className="px-3 py-1 text-white bg-red-500 rounded hover:bg-red-600"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-      {editFormVisible && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-75">
-          <div className="bg-white p-8 rounded-lg shadow-lg">
-            <h2 className="text-lg font-semibold mb-4">Edit Book</h2>
-            <form onSubmit={handleEditSubmit}>
-              <div className="mb-4">
-                <label
-                  htmlFor="name"
-                  className="block font-medium text-gray-700"
-                >
+                <label htmlFor="name" className="block mb-2 font-bold">
                   Topic:
                 </label>
                 <input
@@ -438,32 +324,42 @@ const Charts = ({ placeholder }) => {
                   default
                   className="w-full border rounded-md px-3 py-2 mt-1 focus:outline-none focus:ring focus:border-blue-300"
                 />
-              </div>
-              <div className="mb-4">
-                <label htmlFor="name" className="block mb-2 font-bold">
+                <label htmlFor="name" className="block mt-4 mb-2 font-bold">
                   Section:
                 </label>
                 <input
                   type="text"
                   id="name"
                   className="w-full border border-gray-300 px-3 py-2 mb-4 rounded"
-                  value={editSection}
-                  onChange={(e) => setEditSection(e.target.value)}
+                  value={section}
+                  onChange={(e) => setSection(e.target.value)}
+                  required
                 />
-              </div>
-              <div className="mb-4">
-              <label htmlFor="name" className="block mb-2 font-bold">
-                Body:
-              </label>
-                <JoditEditor
-                  ref={editor}
-                  value={content}
-                  tabIndex={1} // tabIndex of textarea
-                  onChange={(newContent) => setEditContent(newContent)} // preferred to use only this option to update the content for performance reasons
-                />
-              </div>
-              <div className="mb-4">
-                <label htmlFor="imageLink" className="block mb-2 font-bold">
+                <div className="">
+                  <label htmlFor="name" className="block mb-2 font-bold">
+                    Body:
+                  </label>
+                  <JoditEditor
+                    ref={editor}
+                    value={content}
+                    height="300px"
+                    tabIndex={1} // tabIndex of textarea
+                    onChange={(newContent) => setContent(newContent)} // preferred to use only this option to update the content for performance reasons
+                  />
+                </div>
+                {/* <input
+                type="text"
+                id="name"
+                className="w-full border border-gray-300 px-3 py-2 mb-4 rounded"
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
+                required
+              /> */}
+
+                <label
+                  htmlFor="imageLink"
+                  className="block mt-4  mb-2 font-bold"
+                >
                   Image:
                 </label>
                 <input
@@ -472,51 +368,166 @@ const Charts = ({ placeholder }) => {
                   className="w-full border border-gray-300 px-3 py-2 mb-4 rounded"
                   onChange={handleFileChange} // Store the image data in the state
                   accept="image/*" // Add accept attribute to allow only image files
+                  required
                 />
-              </div>
-
-              <div className="flex justify-end">
                 <input
                   type="submit"
                   className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
                   value="Submit"
                 />
+              </form>
+            </div>
+          )}
+        </div>
+        {loading ? (
+          <div className="h-screen flex items-center justify-center">
+            <Loading color="#000000" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 gap-8 mt-12">
+            {data.map((item, index) => (
+              <div
+                className="flex items-center p-4 justify-between rounded-md flex-col bg-white shadow-md space-x-2 space-y-4 relative" // Added 'relative' class
+                key={item.id}
+              >
+                <div className="absolute top-0 left-0 bg-blue-500 text-white p-2 rounded-tr-md rounded-bl-md">
+                  {index + 1} {/* Display card number */}
+                </div>
+                <div>
+                  <img
+                    src={`https://a4medicine-charts.s3.ap-southeast-2.amazonaws.com/${item.image}`}
+                    alt={item.name}
+                    className="w-56 h-56"
+                  />
+                </div>
+                <div className="text-center">
+                  <h2 className="text-lg font-semibold">{item.section}</h2>
+                </div>
+                <div className="ml-auto space-x-2">
+                  <button
+                    onClick={() => {
+                      setEditFormVisible(true);
+                      setId(item.id);
+                    }}
+                    className="px-3 py-1 text-white bg-blue-500 rounded hover:bg-blue-600"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => {
+                      setId(item.id);
+                      handleQuizCancel();
+                    }}
+                    className="px-3 py-1 text-white bg-red-500 rounded hover:bg-red-600"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {editFormVisible && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-75">
+            <div className="bg-white p-8 rounded-lg shadow-lg">
+              <h2 className="text-lg font-semibold mb-4">Edit Book</h2>
+              <form onSubmit={handleEditSubmit}>
+                <div className="mb-4">
+                  <label
+                    htmlFor="name"
+                    className="block font-medium text-gray-700"
+                  >
+                    Topic:
+                  </label>
+                  <input
+                    type="text"
+                    id="topic"
+                    name="topic"
+                    value={title}
+                    default
+                    className="w-full border rounded-md px-3 py-2 mt-1 focus:outline-none focus:ring focus:border-blue-300"
+                  />
+                </div>
+                <div className="mb-4">
+                  <label htmlFor="name" className="block mb-2 font-bold">
+                    Section:
+                  </label>
+                  <input
+                    type="text"
+                    id="name"
+                    className="w-full border border-gray-300 px-3 py-2 mb-4 rounded"
+                    value={editSection}
+                    onChange={(e) => setEditSection(e.target.value)}
+                  />
+                </div>
+                <div className="mb-4">
+                  <label htmlFor="name" className="block mb-2 font-bold">
+                    Body:
+                  </label>
+                  <JoditEditor
+                    ref={editor}
+                    value={content}
+                    tabIndex={1} // tabIndex of textarea
+                    onChange={(newContent) => setEditContent(newContent)} // preferred to use only this option to update the content for performance reasons
+                  />
+                </div>
+                <div className="mb-4">
+                  <label htmlFor="imageLink" className="block mb-2 font-bold">
+                    Image:
+                  </label>
+                  <input
+                    type="file" // Use type="file" for image input
+                    id="image"
+                    className="w-full border border-gray-300 px-3 py-2 mb-4 rounded"
+                    onChange={handleFileChange} // Store the image data in the state
+                    accept="image/*" // Add accept attribute to allow only image files
+                  />
+                </div>
+
+                <div className="flex justify-end">
+                  <input
+                    type="submit"
+                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                    value="Submit"
+                  />
+                  <button
+                    type="button"
+                    onClick={hideEditForm}
+                    className="px-4 py-2 ml-4 bg-gray-400 text-white rounded hover:bg-gray-500"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+        <div className="flex items-center justify-center">
+          {showNotification && (
+            <div className="bg-white border  top-0 fixed z-[1000] rounded-lg p-4 mt-4">
+              <p className="text-gray-800 text-lg mb-2">
+                Are you sure you want to cancel your plan?
+              </p>
+              <div className="flex justify-end">
                 <button
-                  type="button"
-                  onClick={hideEditForm}
-                  className="px-4 py-2 ml-4 bg-gray-400 text-white rounded hover:bg-gray-500"
+                  className="bg-green-500 text-white px-4 py-2 rounded mr-2"
+                  onClick={handleConfirm}
+                >
+                  Confirm
+                </button>
+                <button
+                  className="bg-red-500 text-white px-4 py-2 rounded"
+                  onClick={handleCancel}
                 >
                   Cancel
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
-      <div className="flex items-center justify-center">
-        {showNotification && (
-          <div className="bg-white border  top-0 fixed z-[1000] rounded-lg p-4 mt-4">
-            <p className="text-gray-800 text-lg mb-2">
-              Are you sure you want to cancel your plan?
-            </p>
-            <div className="flex justify-end">
-              <button
-                className="bg-green-500 text-white px-4 py-2 rounded mr-2"
-                onClick={handleConfirm}
-              >
-                Confirm
-              </button>
-              <button
-                className="bg-red-500 text-white px-4 py-2 rounded"
-                onClick={handleCancel}
-              >
-                Cancel
-              </button>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 

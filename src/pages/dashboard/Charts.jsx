@@ -102,7 +102,7 @@ const Charts = () => {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({topic: topic, image: key }),
+        body: JSON.stringify({ topic: topic, image: key }),
       });
 
       const data = await response.json();
@@ -209,8 +209,6 @@ const Charts = () => {
       toast.error("An unexpected error occurred. Please try again.");
     }
   };
-
-
 
   const uploadFile = async (url, file) => {
     console.log("File uploading...");
@@ -337,11 +335,14 @@ const Charts = () => {
         </div>
       ) : (
         <div className="grid grid-cols-3 gap-8 mt-12">
-          {data.map((item) => (
+          {data.map((item, index) => (
             <div
-              className="flex items-center p-4 justify-between rounded-md flex-col bg-white shadow-md space-x-2 space-y-4"
-              key={item.id}
+              className="flex items-center p-4 justify-between rounded-md flex-col bg-white shadow-md space-x-2 space-y-4 relative" // Added 'relative' class
+              key={index}
             >
+              <div className="absolute top-0 left-0 bg-blue-500 text-white p-2 rounded-tr-md rounded-bl-md">
+                {index + 1} {/* Display card number */}
+              </div>
               <div>
                 <img
                   src={`https://a4medicine-charts.s3.ap-southeast-2.amazonaws.com/${item.image}`}
