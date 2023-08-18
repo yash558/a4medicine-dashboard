@@ -102,7 +102,7 @@ const Charts = () => {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ topic: topic, image: key }),
+        body: JSON.stringify({topic: topic, image: key }),
       });
 
       const data = await response.json();
@@ -210,6 +210,8 @@ const Charts = () => {
     }
   };
 
+
+
   const uploadFile = async (url, file) => {
     console.log("File uploading...");
     try {
@@ -289,7 +291,7 @@ const Charts = () => {
           Create
         </button>
         {showForm && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-25">
+          <div className="fixed inset-0 flex items-center justify-center md:pl-80 bg-black bg-opacity-25">
             <form
               className="bg-white p-8 rounded shadow-md w-96"
               onSubmit={handleSubmit}
@@ -335,14 +337,14 @@ const Charts = () => {
         </div>
       ) : (
         <div className="grid grid-cols-3 gap-8 mt-12">
-          {data.map((item, index) => (
-            <div
-              className="flex items-center p-4 justify-between rounded-md flex-col bg-white shadow-md space-x-2 space-y-4 relative" // Added 'relative' class
-              key={index}
-            >
-              <div className="absolute top-0 left-0 bg-blue-500 text-white p-2 rounded-tr-md rounded-bl-md">
-                {index + 1} {/* Display card number */}
-              </div>
+          {data.map((item,index) => (
+             <div
+             className="flex items-center p-4 justify-between rounded-md flex-col bg-white shadow-md space-x-2 space-y-4" // Added 'relative' class
+             key={index}
+           >
+             <div className=" bg-blue-500 text-white p-2 rounded-tr-md rounded-bl-md flex items-start justify-start">
+               {index + 1} {/* Display card number */}
+             </div>
               <div>
                 <img
                   src={`https://a4medicine-charts.s3.ap-southeast-2.amazonaws.com/${item.image}`}
