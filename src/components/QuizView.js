@@ -20,6 +20,7 @@ const Charts = () => {
   const [link, setLink] = useState("");
   const [count, setCount] = useState("");
   const [editCount, setEditCount] = useState("");
+  const [selectedImage, setSelectedImage] = useState(null);
 
   // function to get all data from api
   useEffect(() => {
@@ -33,6 +34,7 @@ const Charts = () => {
         );
         if (dat.status === "success") {
           setData(sortedData);
+          console.log(sortedData)
           setLoading(false);
         } else {
         }
@@ -44,6 +46,9 @@ const Charts = () => {
 
     getData();
   }, []);
+
+
+ 
 
   //  notification to confirm delete
   const handleQuizCancel = () => {
@@ -137,6 +142,17 @@ const Charts = () => {
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
     setFile(selectedFile);
+    const file = e.target.files[0]; // Get the selected file
+
+    if (file) {
+      const reader = new FileReader();
+
+      reader.onload = (e) => {
+        setSelectedImage(e.target.result); // Set the selected image data as a base64 URL
+      };
+
+      reader.readAsDataURL(file); // Read the file as a data URL
+    }
 
     // Get the file name (including the extension)
     const fileName = selectedFile.name;
@@ -370,6 +386,7 @@ const Charts = () => {
               </div>
               <div className="text-center">
                 <h2 className="text-lg font-semibold">{item.name}</h2>
+                <p>{item.embed}</p>
                 <p className="text-gray-600">No of Questions : {item.count}</p>
               </div>
               <div className="ml-auto space-x-2">
@@ -377,6 +394,10 @@ const Charts = () => {
                   onClick={() => {
                     setEditFormVisible(true);
                     setId(item.id);
+                    setEditName(item.name);
+                    setEditCount(item.count);
+                    setEditLink(item.embed);
+                    setSelectedImage(`https://a4medicine-charts.s3.ap-southeast-2.amazonaws.com/${item.image}`)
                   }}
                   className="px-3 py-1 text-white bg-blue-500 rounded hover:bg-blue-600"
                 >
@@ -398,14 +419,11 @@ const Charts = () => {
       )}
       {editFormVisible && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-75">
-          <div className="bg-white p-8 rounded-lg shadow-lg">
+          <div className="bg-white p-8 rounded-lg overflow-y-auto h-[90vh] shadow-lg">
             <h2 className="text-lg font-semibold mb-4">Edit Quiz</h2>
             <form onSubmit={handleEditSubmit}>
               <div className="mb-4">
-                <label
-                  htmlFor="name"
-                  className="block font-medium text-gray-700"
-                >
+              <label htmlFor="name" className="block mb-2 font-bold">
                   Name:
                 </label>
                 <input
@@ -455,8 +473,18 @@ const Charts = () => {
                   accept="image/*" // Add accept attribute to allow only image files
                 />
               </div>
+              {selectedImage && (
+                  <div className="flex items-center justify-center flex-col my-2">
+                    <p>Selected Image:</p>
+                    <img
+                      src={selectedImage}
+                      alt="Selected"
+                      className="max-w-xs max-h-[300px]"
+                    />
+                  </div>
+                )}
 
-              <div className="flex justify-end">
+              <div className="flex justify-center">
                 <input
                   type="submit"
                   className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"

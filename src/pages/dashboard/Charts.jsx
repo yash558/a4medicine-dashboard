@@ -102,7 +102,7 @@ const Charts = () => {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({topic: topic, image: key }),
+        body: JSON.stringify({ topic: topic, image: key }),
       });
 
       const data = await response.json();
@@ -129,6 +129,17 @@ const Charts = () => {
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
     setFile(selectedFile);
+    const file = e.target.files[0]; // Get the selected file
+
+    if (file) {
+      const reader = new FileReader();
+
+      reader.onload = (e) => {
+        setSelectedImage(e.target.result); // Set the selected image data as a base64 URL
+      };
+
+      reader.readAsDataURL(file); // Read the file as a data URL
+    }
 
     // Get the file name (including the extension)
     const fileName = selectedFile.name;
@@ -210,8 +221,6 @@ const Charts = () => {
     }
   };
 
-
-
   const uploadFile = async (url, file) => {
     console.log("File uploading...");
     try {
@@ -279,8 +288,11 @@ const Charts = () => {
     }
   };
 
+  const [selectedImage, setSelectedImage] = useState(null);
+
   return (
     <div>
+      
       <Toaster />
       <div className="flex justify-between">
         <h1 className="text-4xl text-bold ">Charts</h1>
@@ -337,53 +349,58 @@ const Charts = () => {
         </div>
       ) : (
         <div className="grid grid-cols-3 gap-8 mt-12">
-          {data.map((item,index) => (
-             <div
-             className="flex items-center p-4 justify-between rounded-md flex-col bg-white shadow-md space-x-2 space-y-4" // Added 'relative' class
-             key={index}
-           >
-             <div className=" bg-blue-500 text-white p-2 rounded-tr-md rounded-bl-md flex items-start justify-start">
-               {index + 1} {/* Display card number */}
-             </div>
-              <div>
-                <img
-                  src={`https://a4medicine-charts.s3.ap-southeast-2.amazonaws.com/${item.image}`}
-                  alt={item.name}
-                  className="w-56 h-56"
-                />
+          {data
+            .slice() // Create a shallow copy of the data array
+            .sort((a, b) => a.topic.localeCompare(b.topic)) // Sort the copy alphabetically by the 'topic' property
+            .map((item, index) => (
+              <div
+                className="flex items-center p-4 justify-between rounded-md flex-col bg-white shadow-md space-x-2 space-y-4" // Added 'relative' class
+                key={index}
+              >
+                <div className=" bg-blue-500 text-white p-2 rounded-tr-md rounded-bl-md flex items-start justify-start">
+                  {index + 1} {/* Display card number */}
+                </div>
+                <div>
+                  <img
+                    src={`https://a4medicine-charts.s3.ap-southeast-2.amazonaws.com/${item.image}`}
+                    alt={item.name}
+                    className="w-56 h-56"
+                  />
+                </div>
+                <div className="text-center">
+                  <h2 className="text-lg font-semibold">{item.topic}</h2>
+                  {/* <p className="text-gray-600">£ {item.price}</p> */}
+                </div>
+                <div className="ml-auto space-x-2">
+                  <button
+                    onClick={() => {
+                      setEditFormVisible(true);
+                      setId(item.id);
+                      setEditTopic(item.topic);
+                      setSelectedImage(`https://a4medicine-charts.s3.ap-southeast-2.amazonaws.com/${item.image}`);
+                    }}
+                    className="px-3 py-1 text-white bg-blue-500 rounded hover:bg-blue-600"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => {
+                      setId(item.id);
+                      handleQuizCancel();
+                    }}
+                    className="px-3 py-1 text-white bg-red-500 rounded hover:bg-red-600"
+                  >
+                    Delete
+                  </button>
+                  <Link
+                    to={`/dashboard/chart/${item.id}`}
+                    className="border-blue-600 border-2 px-3 py-2 text-blue-500  mb-6 text-center  rounded-md"
+                  >
+                    Read More
+                  </Link>
+                </div>
               </div>
-              <div className="text-center">
-                <h2 className="text-lg font-semibold">{item.topic}</h2>
-                {/* <p className="text-gray-600">£ {item.price}</p> */}
-              </div>
-              <div className="ml-auto space-x-2">
-                <button
-                  onClick={() => {
-                    setEditFormVisible(true);
-                    setId(item.id);
-                  }}
-                  className="px-3 py-1 text-white bg-blue-500 rounded hover:bg-blue-600"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => {
-                    setId(item.id);
-                    handleQuizCancel();
-                  }}
-                  className="px-3 py-1 text-white bg-red-500 rounded hover:bg-red-600"
-                >
-                  Delete
-                </button>
-                <Link
-                  to={`/dashboard/chart/${item.id}`}
-                  className="border-blue-600 border-2 px-3 py-2 text-blue-500  mb-6 text-center  rounded-md"
-                >
-                  Read More
-                </Link>
-              </div>
-            </div>
-          ))}
+            ))}
         </div>
       )}
       {editFormVisible && (
@@ -419,7 +436,17 @@ const Charts = () => {
                   accept="image/*" // Add accept attribute to allow only image files
                 />
               </div>
-              <div className="flex justify-end">
+              {selectedImage && (
+                <div className="flex items-center justify-center flex-col my-2">
+                  <p>Selected Image:</p>
+                  <img
+                    src={selectedImage}
+                    alt="Selected"
+                    className="max-w-xs max-h-[300px]"
+                  />
+                </div>
+              )}
+              <div className="flex justify-center">
                 <input
                   type="submit"
                   className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"

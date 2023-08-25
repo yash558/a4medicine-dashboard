@@ -5,6 +5,7 @@ import Loading from "./../../components/Loading";
 import JoditEditor from "jodit-react";
 import { Sidenav } from "./../../widgets/layout/sidenav";
 import routes from "../../routes";
+import {  useNavigate } from "react-router-dom";
 
 const Charts = ({ placeholder }) => {
   const [data, setData] = useState([]);
@@ -20,6 +21,7 @@ const Charts = ({ placeholder }) => {
   const [showNotification, setShowNotification] = useState(false);
   const urlId = window.location.href.split("chart/")[1];
   const [title, setTitle] = useState("");
+  const [selectedImage, setSelectedImage] = useState(null);
 
   const [section, setSection] = useState("");
   const [editTopic, setEditTopic] = useState("");
@@ -48,6 +50,7 @@ const Charts = ({ placeholder }) => {
         if (dat.status === "success") {
           setLoading(false);
           setData(sortedData);
+          console.log(sortedData)
           setTitle(dat?.data?.topic);
         } else {
           toast.error(dat.message);
@@ -152,6 +155,17 @@ const Charts = ({ placeholder }) => {
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
     setFile(selectedFile);
+    const file = e.target.files[0]; // Get the selected file
+
+    if (file) {
+      const reader = new FileReader();
+
+      reader.onload = (e) => {
+        setSelectedImage(e.target.result); // Set the selected image data as a base64 URL
+      };
+
+      reader.readAsDataURL(file); // Read the file as a data URL
+    }
 
     // Get the file name (including the extension)
     const fileName = selectedFile.name;
@@ -291,12 +305,24 @@ const Charts = ({ placeholder }) => {
     }
   };
 
+  const navigate = useNavigate();
+
+  const goBack = () => {
+    navigate(-1); // This function navigates back to the previous page
+  };
+
   return (
     <>
       <Sidenav routes={routes} brandName="A4Medicine" />
       <div className="p-10 md:ml-80">
         <Toaster />
         <div className="flex justify-between">
+          <button
+            onClick={goBack}
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          >
+            Go Back
+          </button>
           <h1 className="text-4xl text-bold text-center">{title}</h1>
           <button
             className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
@@ -347,14 +373,6 @@ const Charts = ({ placeholder }) => {
                     onChange={(newContent) => setContent(newContent)} // preferred to use only this option to update the content for performance reasons
                   />
                 </div>
-                {/* <input
-                type="text"
-                id="name"
-                className="w-full border border-gray-300 px-3 py-2 mb-4 rounded"
-                value={body}
-                onChange={(e) => setBody(e.target.value)}
-                required
-              /> */}
 
                 <label
                   htmlFor="imageLink"
@@ -368,8 +386,10 @@ const Charts = ({ placeholder }) => {
                   className="w-full border border-gray-300 px-3 py-2 mb-4 rounded"
                   onChange={handleFileChange} // Store the image data in the state
                   accept="image/*" // Add accept attribute to allow only image files
-                  required
+                  
                 />
+
+       
                 <input
                   type="submit"
                   className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
@@ -385,53 +405,59 @@ const Charts = ({ placeholder }) => {
           </div>
         ) : (
           <div className="grid grid-cols-3 gap-8 mt-12">
-            {data.map((item, index) => (
-              <div
-                className=" flex items-center p-4 justify-between rounded-md flex-col bg-white shadow-md space-x-2 space-y-4" // Added 'relative' class
-                key={item.id}
-              >
-                 <div className="bg-blue-500 text-white p-2 rounded-tr-md rounded-bl-md">
-               {index + 1} {/* Display card number */}
-             </div>
-                <div>
-                  <img
-                    src={`https://a4medicine-charts.s3.ap-southeast-2.amazonaws.com/${item.image}`}
-                    alt={item.name}
-                    className="w-56 h-56"
-                  />
+            {data
+              .slice() // Create a shallow copy of the data array
+              .sort((a, b) => a.section.localeCompare(b.section)) // Sort the copy alphabetically by the 'topic' property
+              .map((item, index) => (
+                <div
+                  className=" flex items-center p-4 justify-between rounded-md flex-col bg-white shadow-md space-x-2 space-y-4" // Added 'relative' class
+                  key={item.id}
+                >
+                  <div className="bg-blue-500 text-white p-2 rounded-tr-md rounded-bl-md">
+                    {index + 1} {/* Display card number */}
+                  </div>
+                  <div>
+                    <img
+                      src={`https://a4medicine-charts.s3.ap-southeast-2.amazonaws.com/${item.image}`}
+                      alt={item.name}
+                      className="w-56 h-56"
+                    />
+                  </div>
+                  <div className="text-center">
+                    <h2 className="text-lg font-semibold">{item.section}</h2>
+                  </div>
+                  <div className="ml-auto space-x-2">
+                    <button
+                      onClick={() => {
+                        setEditFormVisible(true);
+                        setId(item.id);
+                        setSelectedImage(`https://a4medicine-charts.s3.ap-southeast-2.amazonaws.com/${item.image}`);
+                        setEditSection(item.section);
+                        setEditContent(item.body);
+                      }}
+                      className="px-3 py-1 text-white bg-blue-500 rounded hover:bg-blue-600"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => {
+                        setId(item.id);
+                        handleQuizCancel();
+                      }}
+                      className="px-3 py-1 text-white bg-red-500 rounded hover:bg-red-600"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
-                <div className="text-center">
-                  <h2 className="text-lg font-semibold">{item.section}</h2>
-                </div>
-                <div className="ml-auto space-x-2">
-                  <button
-                    onClick={() => {
-                      setEditFormVisible(true);
-                      setId(item.id);
-                    }}
-                    className="px-3 py-1 text-white bg-blue-500 rounded hover:bg-blue-600"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => {
-                      setId(item.id);
-                      handleQuizCancel();
-                    }}
-                    className="px-3 py-1 text-white bg-red-500 rounded hover:bg-red-600"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            ))}
+              ))}
           </div>
         )}
 
         {editFormVisible && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-75">
-            <div className="bg-white p-8 rounded-lg shadow-lg">
-              <h2 className="text-lg font-semibold mb-4">Edit Book</h2>
+          <div className="fixed inset-0 flex items-center  justify-center bg-black bg-opacity-75">
+            <div className="bg-white p-8 rounded-lg overflow-y-auto h-[90vh] shadow-lg md:ml-80">
+              <h2 className="text-lg font-semibold mb-4">Edit Charts</h2>
               <form onSubmit={handleEditSubmit}>
                 <div className="mb-4">
                   <label
@@ -467,7 +493,7 @@ const Charts = ({ placeholder }) => {
                   </label>
                   <JoditEditor
                     ref={editor}
-                    value={content}
+                    value={editContent}
                     tabIndex={1} // tabIndex of textarea
                     onChange={(newContent) => setEditContent(newContent)} // preferred to use only this option to update the content for performance reasons
                   />
@@ -484,8 +510,18 @@ const Charts = ({ placeholder }) => {
                     accept="image/*" // Add accept attribute to allow only image files
                   />
                 </div>
+                {selectedImage && (
+                  <div className="flex items-center justify-center flex-col my-2">
+                    <p>Selected Image:</p>
+                    <img
+                      src={selectedImage}
+                      alt="Selected"
+                      className="max-w-xs max-h-[300px]"
+                    />
+                  </div>
+                )}
 
-                <div className="flex justify-end">
+                <div className="flex justify-center">
                   <input
                     type="submit"
                     className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
