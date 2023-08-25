@@ -81,6 +81,30 @@ const Charts = ({ placeholder }) => {
   };
 
   // function to delete a data
+  const getBodyData = async () => {
+  
+    try {
+      const response = await fetch(`${API}section/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const dat = await response.json();
+
+      if (dat.status === "success") {
+        setEditContent(dat?.data.body);
+        console.log(dat?.data.body);
+        setLoading(false);
+      } else {
+        toast.error(dat.message);
+        setLoading(false);
+      }
+    } catch (error) {
+      setLoading(false);
+      toast.error(error.message);
+    }
+  };
   const handleDelete = async () => {
     try {
       const response = await fetch(`${API}section/${id}`, {
@@ -428,12 +452,12 @@ const Charts = ({ placeholder }) => {
                   </div>
                   <div className="ml-auto space-x-2">
                     <button
-                      onClick={() => {
-                        setEditFormVisible(true);
+                      onClick={() => {                     
+                        getBodyData()                   
                         setId(item.id);
                         setSelectedImage(`https://a4medicine-charts.s3.ap-southeast-2.amazonaws.com/${item.image}`);
-                        setEditSection(item.section);
-                        setEditContent(item.body);
+                        setEditSection(item.section);    
+                        setEditFormVisible(true);
                       }}
                       className="px-3 py-1 text-white bg-blue-500 rounded hover:bg-blue-600"
                     >
@@ -457,7 +481,12 @@ const Charts = ({ placeholder }) => {
         {editFormVisible && (
           <div className="fixed inset-0 flex items-center  justify-center bg-black bg-opacity-75">
             <div className="bg-white p-8 rounded-lg overflow-y-auto h-[90vh] shadow-lg md:ml-80">
+              <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold mb-4">Edit Charts</h2>
+              <div className="">
+                  <button onClick={() => setEditFormVisible(false)}>X</button>
+                </div>
+                </div>
               <form onSubmit={handleEditSubmit}>
                 <div className="mb-4">
                   <label
