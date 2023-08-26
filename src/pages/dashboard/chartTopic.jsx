@@ -441,11 +441,13 @@ const Charts = ({ placeholder }) => {
                     {index + 1} {/* Display card number */}
                   </div>
                   <div>
+                    {item.image &&
                     <img
                       src={`https://a4medicine-charts.s3.ap-southeast-2.amazonaws.com/${item.image}`}
                       alt={item.name}
                       className="w-56 h-56"
                     />
+                  }
                   </div>
                   <div className="text-center">
                     <h2 className="text-lg font-semibold">{item.section}</h2>
