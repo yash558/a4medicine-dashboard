@@ -138,7 +138,7 @@ const Charts = ({ placeholder }) => {
       key = await handleUpload();
       console.log("moving to update in DB...");
       console.log(image);
-      const apiUrl = `${API}/section/${urlId}`;
+      const apiUrl = `${API}section/${urlId}`;
 
       const response = await fetch(apiUrl, {
         method: "POST",
